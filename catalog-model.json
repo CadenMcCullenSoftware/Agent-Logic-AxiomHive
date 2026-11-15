@@ -287,7 +287,6 @@
       "title": "Verify sources and scripts exist",
       "summary": "Resolve references with a tool at the point of use; confirm existence, availability at point of use, and support before acting.",
       "payload": { "logic_payload": { "if": [ { "var": "artifact.existence_status" }, [ { "==": [ { "var": "artifact.existence_status" }, "confirmed" ] }, "PASS", "BLOCK" ], "UNKNOWN" ] } },
-      "applies_to": ["artifact", "source"],
       "source_artifact_id": "Principle 3: Verifying that sources and scripts exist.md",
       "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Principle 3: Verifying that sources and scripts exist.md", "reviewed_at": "2026-11-15" },
       "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
