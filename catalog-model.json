@@ -1,0 +1,354 @@
+{
+  "meta_model_version": "1.0.0",
+  "nodes": [
+    {
+      "id": "node-artifact-design-md",
+      "node_type": "Artifact",
+      "title": "design.md — Agent Record Schema Specification",
+      "summary": "Formal schema specification for an agent record capturing task framing, evidence, claims, sources, reasoning, approval state, and evaluation.",
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-schema-json",
+      "node_type": "Artifact",
+      "title": "agent-design.schema.json — JSON Schema for Agent Records",
+      "summary": "JSON Schema (draft 2020-12) used to validate agent records; strict additionalProperties: false at every level.",
+      "source_artifact_id": "agent-design.schema.json",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "agent-design.schema.json", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-example-json",
+      "node_type": "Artifact",
+      "title": "example-agent-record.json — Schema-valid Example Record",
+      "summary": "A sample valid agent record illustrating the schema in use, with supporting_tool AI role and user-provided attribution.",
+      "source_artifact_id": "example-agent-record.json",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "example-agent-record.json", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-readme-md",
+      "node_type": "Artifact",
+      "title": "README.md — Agent Docs Overview",
+      "summary": "Repository map and purpose: an evidence-grounded, user-controlled research assistant design package.",
+      "source_artifact_id": "README.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "README.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-skill-md",
+      "node_type": "Artifact",
+      "title": "SKILL.md — Workflow Composer Skill",
+      "summary": "Mandatory skill for composing multi-item research workflows with deterministic subagent orchestration.",
+      "source_artifact_id": "SKILL.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "SKILL.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-principle-evidence-md",
+      "node_type": "Artifact",
+      "title": "Evidence-supported conclusions.md — Principle",
+      "summary": "Conclusions should rest on inspectable evidence; confidence should match evidence strength; agreement is not evidence of correctness.",
+      "source_artifact_id": "Evidence-supported conclusions.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Evidence-supported conclusions.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-principle-approval-md",
+      "node_type": "Artifact",
+      "title": "Principle 2: Explicit approval before automated action.md — Principle",
+      "summary": "State-changing actions require explicit approval prior to execution; user retains decision authority.",
+      "source_artifact_id": "Principle 2: Explicit approval before automated action.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Principle 2: Explicit approval before automated action.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-principle-verify-md",
+      "node_type": "Artifact",
+      "title": "Principle 3: Verifying that sources and scripts exist.md — Principle",
+      "summary": "Resolve references with a tool at the point of use; confirm existence, availability, and support before acting.",
+      "source_artifact_id": "Principle 3: Verifying that sources and scripts exist.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Principle 3: Verifying that sources and scripts exist.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-principle-partner-md",
+      "node_type": "Artifact",
+      "title": "Principle 4: Supportive partner stance without reframing opinion as fact.md — Principle",
+      "summary": "Supportive partner stance; do not reframe opinion as fact.",
+      "source_artifact_id": "Principle 4: Supportive partner stance without reframing opinion as fact.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Principle 4: Supportive partner stance without reframing opinion as fact.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-preserving-control-md",
+      "node_type": "Artifact",
+      "title": "Preserving user control.md — Principle",
+      "summary": "Preserve the user's authority; the assistant supports without usurping judgment.",
+      "source_artifact_id": "Preserving user control.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Preserving user control.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-compliance-vs-correctness-md",
+      "node_type": "Artifact",
+      "title": "Compliance versus correctness.md — Principle",
+      "summary": "Distinguish compliance (adherence to rules/process) from correctness (factual accuracy).",
+      "source_artifact_id": "Compliance versus correctness.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Compliance versus correctness.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-safe-sharing-md",
+      "node_type": "Artifact",
+      "title": "Safe knowledge sharing within operational boundaries.md — Principle",
+      "summary": "Share knowledge within operational boundaries; privacy minimized and information flow controlled.",
+      "source_artifact_id": "Safe knowledge sharing within operational boundaries.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Safe knowledge sharing within operational boundaries.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-avoiding-interpretation-md",
+      "node_type": "Artifact",
+      "title": "Avoiding unrequested interpretation.md — Principle",
+      "summary": "Avoid interpreting beyond what the user requested; do not reframe or over-interpret.",
+      "source_artifact_id": "Avoiding unrequested interpretation.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Avoiding unrequested interpretation.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-attribution-md",
+      "node_type": "Artifact",
+      "title": "Attribution and credit in AI-assisted work.md — Principle",
+      "summary": "Attribute human authorship and AI role; ai_role fixed to supporting_tool.",
+      "source_artifact_id": "Attribution and credit in AI-assisted work.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Attribution and credit in AI-assisted work.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-artifact-collective-learning-md",
+      "node_type": "Artifact",
+      "title": "Collective learning without damage.md — Principle",
+      "summary": "Enable collective learning without causing damage.",
+      "source_artifact_id": "Collective learning without damage.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Collective learning without damage.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    },
+    {
+      "id": "node-concept-evidence-grounded",
+      "node_type": "Concept",
+      "title": "Evidence-grounded claims",
+      "summary": "Every claim carries source_ids and support_status; every source carries access_status and limitations.",
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["source_access_status"], "failure_mode": "unsupported_claim" }
+    },
+    {
+      "id": "node-concept-user-controlled",
+      "node_type": "Concept",
+      "title": "User-controlled assistant",
+      "summary": "attribution.ai_role is fixed to supporting_tool; human_author and attribution_basis make human responsibility explicit.",
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["attribution_ai_role"], "failure_mode": "usurped_authority" }
+    },
+    {
+      "id": "node-concept-uncertainty-disclosure",
+      "node_type": "Concept",
+      "title": "Uncertainty disclosure",
+      "summary": "Every claim has an uncertainty field; reasoning has unknowns; evaluation has limitations.",
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["uncertainty_field"], "failure_mode": "overconfidence" }
+    },
+    {
+      "id": "node-concept-causal-discipline",
+      "node_type": "Concept",
+      "title": "Causal reasoning discipline",
+      "summary": "Avoid unsupported causal claims; causal_assessment carries claim_limit and evidence_design.",
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["causal_assessment_status"], "failure_mode": "unsupported_causal_claim" }
+    },
+    {
+      "id": "node-concept-schema-conformance",
+      "node_type": "Concept",
+      "title": "Schema conformance is not truth",
+      "summary": "Schema conformance validates structure only; it does not prove factual truth, source quality, independent verification, or safe execution.",
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": "false_assurance" }
+    },
+    {
+      "id": "node-concept-approval-boundary",
+      "node_type": "Concept",
+      "title": "Approval boundary",
+      "summary": "State-changing actions require explicit, prior approval before approved/completed status.",
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["approval_required", "approval_explicit", "approval_prior_to_execution"], "failure_mode": "unauthorized_action" }
+    },
+    {
+      "id": "node-rule-approval-required-v1",
+      "node_type": "Rule",
+      "title": "Legacy Approval Guidance (v1)",
+      "summary": "Approval recommended before state-changing actions.",
+      "payload": { "logic_payload": { "if": [ { "var": "action.external_or_state_changing" }, "RECOMMEND_APPROVAL", "OPTIONAL" ] } },
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "deprecated", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": null, "effective_to": "2026-11-15", "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": "weak_approval" }
+    },
+    {
+      "id": "node-rule-approval-required-v2",
+      "node_type": "Rule",
+      "title": "Explicit Approval Required (v2)",
+      "summary": "If external_or_state_changing is true and status is approved or completed, then approval.required, approval.explicit, and approval.prior_to_execution must all be true.",
+      "payload": {
+        "logic_payload": {
+          "if": [
+            { "and": [
+              { "var": "action.external_or_state_changing" },
+              { "in": [ { "var": "action.status" }, [ "approved", "completed" ] ] }
+            ] },
+            { "and": [
+              { "var": "action.approval.required" },
+              { "var": "action.approval.explicit" },
+              { "var": "action.approval.prior_to_execution" }
+            ] },
+            "PASS"
+          ]
+        }
+      },
+      "source_artifact_id": "agent-design.schema.json",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "agent-design.schema.json", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["approval_required", "approval_explicit", "approval_prior_to_execution"], "failure_mode": "unauthorized_action" }
+    },
+    {
+      "id": "node-rule-no-additional-properties",
+      "node_type": "Rule",
+      "title": "Strict additionalProperties: false",
+      "summary": "No additional properties are allowed at any level; strict additionalProperties: false prevents schema drift.",
+      "payload": { "logic_payload": { "allOf": [ { "additionalProperties": false } ] } },
+      "source_artifact_id": "agent-design.schema.json",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "agent-design.schema.json", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["additional_properties"], "failure_mode": "schema_drift" }
+    },
+    {
+      "id": "node-rule-separate-evidence-inference",
+      "node_type": "Rule",
+      "title": "Separate evidence from inference",
+      "summary": "Evidence-grounded: separate factual evidence from inferred conclusions; label epistemic_status.",
+      "payload": { "logic_payload": { "if": [ { "var": "claim.epistemic_status" }, "REQUIRE_SOURCE_IDS", "WARN" ] } },
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["claim.source_ids", "claim.epistemic_status"], "failure_mode": "blurred_evidence_inference" }
+    },
+    {
+      "id": "node-rule-disclose-uncertainty",
+      "node_type": "Rule",
+      "title": "Disclose uncertainty",
+      "summary": "Every claim has an uncertainty field; never suppress uncertainty for load-bearing claims.",
+      "payload": { "logic_payload": { "if": [ { "var": "claim.uncertainty" }, "PASS", "FLAG_LOW_CONFIDENCE" ] } },
+      "source_artifact_id": "design.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["claim.uncertainty"], "failure_mode": "hidden_uncertainty" }
+    },
+    {
+      "id": "node-rule-verify-sources-exist",
+      "node_type": "Rule",
+      "title": "Verify sources and scripts exist",
+      "summary": "Resolve references with a tool at the point of use; confirm existence, availability at point of use, and support before acting.",
+      "payload": { "logic_payload": { "if": [ { "var": "artifact.existence_status" }, [ { "==": [ { "var": "artifact.existence_status" }, "confirmed" ] }, "PASS", "BLOCK" ], "UNKNOWN" ] } },
+      "source_artifact_id": "Principle 3: Verifying that sources and scripts exist.md",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Principle 3: Verifying that sources and scripts exist.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": ["artifact.existence_status", "source.access_status"], "failure_mode": "missing_artifact" }
+    },
+    {
+      "id": "node-constraint-high-stakes",
+      "node_type": "Constraint",
+      "title": "High-stakes answers require external verification",
+      "summary": "For high-stakes questions, verify externally or state that a confident answer cannot be given.",
+      "source_artifact_id": "Evidence-supported conclusions.md",
+      "epistemic_state": { "status": "canonical", "confidence": 0.9, "source_artifact_id": "Evidence-supported conclusions.md", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "production", "effective_from": "2026-11-15", "effective_to": null, "conditions": { "stakes": "high" } },
+      "reasoning_hints": { "must_check_before": ["independent_check.performed", "independent_check.independent_of_generator"], "failure_mode": "unverified_high_stakes_answer" }
+    },
+    {
+      "id": "node-example-record",
+      "node_type": "Claim",
+      "title": "Example record demonstrates schema-conformant evidence separation",
+      "summary": "example-agent-record.json separates evidence from inference, marks AI role as supporting_tool, and discloses uncertainty and limitations.",
+      "source_artifact_id": "example-agent-record.json",
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "example-agent-record.json", "reviewed_at": "2026-11-15" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null },
+      "reasoning_hints": { "must_check_before": [], "failure_mode": null }
+    }
+  ],
+  "edges": [
+    { "id": "edge-schema-implements-noaddl", "from": "node-artifact-schema-json", "to": "node-rule-no-additional-properties", "relation": "IMPLEMENTS", "reason": "agent-design.schema.json enforces additionalProperties: false at every level.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "agent-design.schema.json" } },
+    { "id": "edge-design-implements-evidence", "from": "node-artifact-design-md", "to": "node-concept-evidence-grounded", "relation": "IMPLEMENTS", "reason": "design.md specifies evidence-grounded claims with source_ids and support_status.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md" } },
+    { "id": "edge-design-implements-user-controlled", "from": "node-artifact-design-md", "to": "node-concept-user-controlled", "relation": "IMPLEMENTS", "reason": "design.md fixes attribution.ai_role to supporting_tool and makes human_author explicit.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md" } },
+    { "id": "edge-approval-rule-requires-boundary", "from": "node-rule-approval-required-v2", "to": "node-concept-approval-boundary", "relation": "REQUIRES", "reason": "The approval rule depends on the approval-boundary concept.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "agent-design.schema.json" } },
+    { "id": "edge-evidence-rule-requires-concept", "from": "node-rule-separate-evidence-inference", "to": "node-concept-evidence-grounded", "relation": "REQUIRES", "reason": "The separation rule instantiates the evidence-grounded concept.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md" } },
+    { "id": "edge-uncertainty-rule-requires-concept", "from": "node-rule-disclose-uncertainty", "to": "node-concept-uncertainty-disclosure", "relation": "REQUIRES", "reason": "The disclosure rule instantiates the uncertainty-disclosure concept.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "design.md" } },
+    { "id": "edge-verify-rule-evidence", "from": "node-rule-verify-sources-exist", "to": "node-artifact-principle-verify-md", "relation": "EVIDENCE", "reason": "Principle 3 is the source artifact for the verify-sources-exist rule.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Principle 3: Verifying that sources and scripts exist.md" } },
+    { "id": "edge-approval-rule-evidence", "from": "node-rule-approval-required-v2", "to": "node-artifact-principle-approval-md", "relation": "EVIDENCE", "reason": "Principle 2 is the source artifact for the explicit-approval rule.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "Principle 2: Explicit approval before automated action.md" } },
+    { "id": "edge-v2-supersedes-v1", "from": "node-rule-approval-required-v2", "to": "node-rule-approval-required-v1", "relation": "SUPERSEDES", "reason": "v2 replaces the weaker v1 recommendation with a mandatory approval requirement.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "agent-design.schema.json" } },
+    { "id": "edge-highstakes-conflicts-approval", "from": "node-constraint-high-stakes", "to": "node-rule-approval-required-v2", "relation": "CONFLICTS_WITH", "reason": "High-stakes answers may require independent verification beyond the approval rule; resolution_rule scopes enforcement.", "resolution_rule": "If context.stakes == 'high', require independent_check.performed == true and independent_check.independent_of_generator == true in addition to approval; otherwise enforce v2 approval rule alone.", "epistemic_state": { "status": "canonical", "confidence": 0.9, "source_artifact_id": "Evidence-supported conclusions.md" } },
+    { "id": "edge-schema-constrains-record", "from": "node-rule-no-additional-properties", "to": "node-example-record", "relation": "CONSTRAINS", "reason": "The example record must conform to strict additionalProperties: false.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "agent-design.schema.json" } },
+    { "id": "edge-example-instantiates-schema", "from": "node-example-record", "to": "node-artifact-schema-json", "relation": "INSTANTIATES", "reason": "example-agent-record.json instantiates the agent-design.schema.json structure.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "example-agent-record.json" } },
+    { "id": "edge-readme-evidence", "from": "node-artifact-readme-md", "to": "node-concept-evidence-grounded", "relation": "SUPPORTS", "reason": "README emphasizes evidence-supported claims over confident guessing.", "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "README.md" } }
+  ],
+  "rules": [
+    {
+      "id": "node-rule-approval-required-v2",
+      "title": "Explicit Approval Required (v2)",
+      "logic_payload": {
+        "if": [
+          { "and": [
+            { "var": "action.external_or_state_changing" },
+            { "in": [ { "var": "action.status" }, [ "approved", "completed" ] ] }
+          ] },
+          { "and": [
+            { "var": "action.approval.required" },
+            { "var": "action.approval.explicit" },
+            { "var": "action.approval.prior_to_execution" }
+          ] },
+          "PASS"
+        ]
+      },
+      "applies_to": ["action"],
+      "epistemic_state": { "status": "canonical", "confidence": 1.0, "source_artifact_id": "agent-design.schema.json" },
+      "validity_scope": { "environment": "documentation", "effective_from": "2026-11-15", "effective_to": null, "conditions": null }
+    }
+  ]
+}

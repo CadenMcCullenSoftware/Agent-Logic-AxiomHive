@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/catalog-meta-model.schema.json",
+  "title": "Catalog Model Meta-Model",
+  "description": "Grammar of the catalog world: allowed Node types, Edge types, Rule types, and required epistemic metadata. Schema conformance validates structure only; it does not prove factual truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["meta_model_version", "nodes", "edges"],
+  "properties": {
+    "meta_model_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" },
+      "uniqueItems": true
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" },
+      "uniqueItems": true
+    },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "epistemic_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "confidence", "source_artifact_id"],
+      "properties": {
+        "status": {
+          "enum": ["canonical", "deprecated", "external", "inferred", "inferred_pending_review", "draft"]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "source_artifact_id": {
+          "type": ["string", "null"]
+        },
+        "reviewed_at": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "validity_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "environment": { "type": ["string", "null"] },
+        "effective_from": { "type": ["string", "null"] },
+        "effective_to": { "type": ["string", "null"] },
+        "conditions": { "type": ["object", "null"] }
+      }
+    },
+    "reasoning_hints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "must_check_before": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "failure_mode": { "type": ["string", "null"] }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "node_type", "title", "epistemic_state"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "node_type": {
+          "enum": ["Concept", "Claim", "Rule", "Procedure", "Artifact", "Assumption", "ContextScope", "Constraint"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": { "type": ["string", "null"] },
+        "payload": { "type": ["object", "null"] },
+        "epistemic_state": { "$ref": "#/$defs/epistemic_state" },
+        "validity_scope": { "$ref": "#/$defs/validity_scope" },
+        "reasoning_hints": { "$ref": "#/$defs/reasoning_hints" },
+        "source_artifact_id": { "type": ["string", "null"] }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "relation", "epistemic_state"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "from": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 },
+        "relation": {
+          "enum": [
+            "REQUIRES", "DEPENDS_ON", "CONSTRAINS", "OVERRIDES",
+            "SUPPORTS", "CONTRADICTS", "SUPERSEDES", "CONFLICTS_WITH",
+            "INSTANTIATES", "ABSTRACTS", "IMPLEMENTS", "EVIDENCE"
+          ]
+        },
+        "reason": { "type": ["string", "null"] },
+        "resolution_rule": { "type": ["string", "null"] },
+        "epistemic_state": { "$ref": "#/$defs/epistemic_state" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "relation": { "enum": ["CONFLICTS_WITH", "CONTRADICTS"] }
+            },
+            "required": ["relation"]
+          },
+          "then": {
+            "properties": {
+              "resolution_rule": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["resolution_rule"]
+          }
+        }
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "logic_payload", "epistemic_state"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "summary": { "type": ["string", "null"] },
+        "logic_payload": { "type": "object" },
+        "applies_to": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "epistemic_state": { "$ref": "#/$defs/epistemic_state" },
+        "validity_scope": { "$ref": "#/$defs/validity_scope" }
+      }
+    }
+  }
+}
