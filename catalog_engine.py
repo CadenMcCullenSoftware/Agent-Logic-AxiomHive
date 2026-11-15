@@ -5,7 +5,7 @@ catalog_engine.py — Layer 3: The Reasoning Engine.
 A small, executable semantic model over the catalog knowledge graph.
 Exposes four reasoning tools:
   - get_meta_model()        -> the Layer 1 grammar (node/edge/rule types)
-  - search_nodes(query, filters) -> semantic/keyword entry-point search
+  - search_nodes(query, filters) -> keyword entry-point search
   - traverse_graph(node_id, edge_types, depth) -> deterministic subgraph walk
   - evaluate_rule(rule_id, context_vars) -> JsonLogic rule evaluation
 
@@ -15,23 +15,29 @@ Store: SQLite (nodes, edges, rules tables).  Backed by catalog-meta-model.json
 Usage:
   python3 catalog_engine.py                 # interactive demo / self-test
   python3 catalog_engine.py --tool validate  # validate schema, graph, and provenance references
-  python5 catalog_engine.py --tool get_meta_model
-  python9 catalog_engine.py --tool search_nodes --query "approval"
+  python3 catalog_engine.py --tool get_meta_model
+  python3 catalog_engine.py --tool search_nodes --query "approval"
   python3 catalog_engine.py --tool traverse_graph --node node-rule-approval-required-v2 --depth 2
   python3 catalog_engine.py --tool evaluate_rule --rule node-rule-approval-required-v2 \
         --context '{"action":{"external_or_state_changing":true,"status":"approved","approval":{"required":true,"explicit":true,"prior_to_execution":true}}}'
 """
 import argparse
+from collections import deque
 import json
 import os
 import sqlite3
+from typing import Any, TypeAlias
+
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-META_MODEL_PATH = os.path.join(BASE_DIR, "catalog-meta-model.json")
-CATALOG_PATH = os.path.join(BASE_DIR, "catalog-model.json")
-DB_PATH = os.path.join(BASE_DIR, "catalog.db")
+JsonObject: TypeAlias = dict[str, Any]
+JsonValue: TypeAlias = Any
+
+BASE_DIR: str = os.path.dirname(os.path.abspath(__file__))
+META_MODEL_PATH: str = os.path.join(BASE_DIR, "catalog-meta-model.json")
+CATALOG_PATH: str = os.path.join(BASE_DIR, "catalog-model.json")
+DB_PATH: str = os.path.join(BASE_DIR, "catalog.db")
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +51,7 @@ class CatalogValidationError(ValueError):
     pass
 
 
-def _jl_var(var, context):
+def _jl_var(var: str, context: JsonObject) -> JsonValue:
     if not isinstance(var, str):
         raise JsonLogicError("var expects a string path")
     cur = context
@@ -57,7 +63,7 @@ def _jl_var(var, context):
     return cur
 
 
-def _jl_truthy(value):
+def _jl_truthy(value: JsonValue) -> bool:
     return not (
         value is None
         or value is False
@@ -67,7 +73,7 @@ def _jl_truthy(value):
     )
 
 
-def _jl_equal(left, right):
+def _jl_equal(left: JsonValue, right: JsonValue) -> bool:
     if isinstance(left, bool) != isinstance(right, bool):
         return False
     if isinstance(left, (int, float)) and not isinstance(left, bool):
@@ -75,11 +81,11 @@ def _jl_equal(left, right):
     return type(left) is type(right) and left == right
 
 
-def _is_number(value):
+def _is_number(value: JsonValue) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def validate_jsonlogic(expr):
+def validate_jsonlogic(expr: JsonValue) -> None:
     """Check that an expression uses only supported operators and arities."""
     if isinstance(expr, (bool, int, float, str)) or expr is None:
         return
@@ -120,7 +126,7 @@ def validate_jsonlogic(expr):
     raise JsonLogicError(f"unsupported JsonLogic operator: {op}")
 
 
-def evaluate_jsonlogic(expr, context):
+def evaluate_jsonlogic(expr: JsonValue, context: JsonObject) -> JsonValue:
     """Evaluate the supported deterministic JsonLogic subset against context."""
     if isinstance(expr, bool):
         return expr
@@ -213,7 +219,7 @@ def evaluate_jsonlogic(expr, context):
     raise JsonLogicError(f"unsupported JsonLogic operator: {op}")
 
 
-def validate_catalog(catalog, meta_model):
+def validate_catalog(catalog: JsonObject, meta_model: JsonObject) -> None:
     """Validate schema structure and graph/provenance references before loading."""
     try:
         Draft202012Validator.check_schema(meta_model)
@@ -284,13 +290,13 @@ def validate_catalog(catalog, meta_model):
 # Store layer (SQLite)
 # ---------------------------------------------------------------------------
 class CatalogStore:
-    def __init__(self, db_path=DB_PATH):
+    def __init__(self, db_path: str = DB_PATH) -> None:
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row
         self._init_schema()
 
-    def _init_schema(self):
+    def _init_schema(self) -> None:
         c = self.conn.cursor()
         c.execute(
             """CREATE TABLE IF NOT EXISTS meta_model (
@@ -333,7 +339,7 @@ class CatalogStore:
         c.execute("CREATE INDEX IF NOT EXISTS idx_nodes_type ON nodes(node_type)")
         self.conn.commit()
 
-    def load_catalog(self, catalog, meta_model):
+    def load_catalog(self, catalog: JsonObject, meta_model: JsonObject) -> None:
         validate_catalog(catalog, meta_model)
         c = self.conn.cursor()
         self.conn.execute("BEGIN IMMEDIATE")
@@ -391,13 +397,18 @@ class CatalogStore:
             self.conn.rollback()
             raise
 
-    def get_meta_model(self):
+    def get_meta_model(self) -> JsonObject:
         row = self.conn.execute(
             "SELECT value FROM meta_model WHERE key='meta_model'"
         ).fetchone()
         return json.loads(row["value"]) if row else {}
 
-    def search_nodes(self, query="", filters=None, limit=50):
+    def search_nodes(
+        self,
+        query: str = "",
+        filters: JsonObject | None = None,
+        limit: int = 50,
+    ) -> list[JsonObject]:
         filters = filters or {}
         sql = "SELECT * FROM nodes WHERE 1=1"
         params = []
@@ -408,29 +419,40 @@ class CatalogStore:
         if filters.get("node_type"):
             sql += " AND node_type = ?"
             params.append(filters["node_type"])
-        if filters.get("status"):
-            sql += " AND epistemic_state LIKE ?"
-            params.append(f'%"status": "{filters["status"]}"%')
         if filters.get("source_artifact_id"):
             sql += " AND source_artifact_id = ?"
             params.append(filters["source_artifact_id"])
-        sql += " ORDER BY id LIMIT ?"
-        params.append(limit)
+        sql += " ORDER BY id"
+        if not filters.get("status"):
+            sql += " LIMIT ?"
+            params.append(limit)
         rows = self.conn.execute(sql, params).fetchall()
-        return [self._node_from_row(r) for r in rows]
+        nodes = [self._node_from_row(row) for row in rows]
+        if filters.get("status"):
+            nodes = [
+                node
+                for node in nodes
+                if node["epistemic_state"].get("status") == filters["status"]
+            ]
+        return nodes[:limit]
 
-    def get_node(self, node_id):
+    def get_node(self, node_id: str) -> JsonObject | None:
         row = self.conn.execute("SELECT * FROM nodes WHERE id=?", (node_id,)).fetchone()
         return self._node_from_row(row) if row else None
 
-    def traverse_graph(self, node_id, edge_types=None, depth=2):
+    def traverse_graph(
+        self,
+        node_id: str,
+        edge_types: list[str] | None = None,
+        depth: int = 2,
+    ) -> JsonObject:
         if edge_types is None:
             edge_types = []
         visited = set()
         results = {"nodes": {}, "edges": []}
-        frontier = [(node_id, 0)]
+        frontier = deque([(node_id, 0)])
         while frontier:
-            current, d = frontier.pop(0)
+            current, d = frontier.popleft()
             if current in visited:
                 continue
             visited.add(current)
@@ -445,7 +467,9 @@ class CatalogStore:
                     frontier.append((e["to"], d + 1))
         return results
 
-    def outgoing_edges(self, node_id, edge_types=None):
+    def outgoing_edges(
+        self, node_id: str, edge_types: list[str] | None = None
+    ) -> list[JsonObject]:
         sql = "SELECT * FROM edges WHERE from_id=?"
         params = [node_id]
         if edge_types:
@@ -455,7 +479,9 @@ class CatalogStore:
         rows = self.conn.execute(sql, params).fetchall()
         return [self._edge_from_row(r) for r in rows]
 
-    def incoming_edges(self, node_id, edge_types=None):
+    def incoming_edges(
+        self, node_id: str, edge_types: list[str] | None = None
+    ) -> list[JsonObject]:
         sql = "SELECT * FROM edges WHERE to_id=?"
         params = [node_id]
         if edge_types:
@@ -465,7 +491,7 @@ class CatalogStore:
         rows = self.conn.execute(sql, params).fetchall()
         return [self._edge_from_row(r) for r in rows]
 
-    def get_rule(self, rule_id):
+    def get_rule(self, rule_id: str) -> JsonObject | None:
         row = self.conn.execute("SELECT * FROM rules WHERE id=?", (rule_id,)).fetchone()
         if not row:
             return None
@@ -478,9 +504,9 @@ class CatalogStore:
             "validity_scope": json.loads(row["validity_scope"]) if row["validity_scope"] else None,
         }
 
-    def detect_conflicts(self, node_id=None):
-        """Return edges of relation CONFLICTS_WITH/CONTRADICTS/SUPERSEDES."""
-        sql = "SELECT * FROM edges WHERE relation IN ('CONFLICTS_WITH','CONTRADICTS','SUPERSEDES')"
+    def detect_conflicts(self, node_id: str | None = None) -> list[JsonObject]:
+        """Return edges that represent conflicts or contradictions."""
+        sql = "SELECT * FROM edges WHERE relation IN ('CONFLICTS_WITH','CONTRADICTS')"
         params = []
         if node_id:
             sql += " AND (from_id=? OR to_id=?)"
@@ -488,7 +514,17 @@ class CatalogStore:
         rows = self.conn.execute(sql, params).fetchall()
         return [self._edge_from_row(r) for r in rows]
 
-    def _node_from_row(self, r):
+    def detect_supersessions(self, node_id: str | None = None) -> list[JsonObject]:
+        """Return edges that record one node superseding another."""
+        sql = "SELECT * FROM edges WHERE relation='SUPERSEDES'"
+        params = []
+        if node_id:
+            sql += " AND (from_id=? OR to_id=?)"
+            params.extend([node_id, node_id])
+        rows = self.conn.execute(sql, params).fetchall()
+        return [self._edge_from_row(r) for r in rows]
+
+    def _node_from_row(self, r: sqlite3.Row) -> JsonObject:
         return {
             "id": r["id"],
             "node_type": r["node_type"],
@@ -501,7 +537,7 @@ class CatalogStore:
             "source_artifact_id": r["source_artifact_id"],
         }
 
-    def _edge_from_row(self, r):
+    def _edge_from_row(self, r: sqlite3.Row) -> JsonObject:
         return {
             "id": r["id"],
             "from": r["from_id"],
@@ -512,7 +548,7 @@ class CatalogStore:
             "epistemic_state": json.loads(r["epistemic_state"]),
         }
 
-    def close(self):
+    def close(self) -> None:
         self.conn.close()
 
 
@@ -520,16 +556,26 @@ class CatalogStore:
 # Reasoning tools
 # ---------------------------------------------------------------------------
 class ReasoningEngine:
-    def __init__(self, store):
+    def __init__(self, store: CatalogStore) -> None:
         self.store = store
 
-    def get_meta_model(self):
+    def get_meta_model(self) -> JsonObject:
         return self.store.get_meta_model()
 
-    def search_nodes(self, query="", filters=None, limit=50):
+    def search_nodes(
+        self,
+        query: str = "",
+        filters: JsonObject | None = None,
+        limit: int = 50,
+    ) -> list[JsonObject]:
         return self.store.search_nodes(query, filters, limit)
 
-    def traverse_graph(self, node_id, edge_types=None, depth=2):
+    def traverse_graph(
+        self,
+        node_id: str,
+        edge_types: list[str] | None = None,
+        depth: int = 2,
+    ) -> JsonObject:
         node = self.store.get_node(node_id)
         if not node:
             raise ValueError(f"unknown node: {node_id}")
@@ -538,7 +584,9 @@ class ReasoningEngine:
             "subgraph": self.store.traverse_graph(node_id, edge_types, depth),
         }
 
-    def evaluate_rule(self, rule_id, context_vars=None):
+    def evaluate_rule(
+        self, rule_id: str, context_vars: JsonObject | None = None
+    ) -> JsonObject:
         if context_vars is None:
             context_vars = {}
         if not isinstance(context_vars, dict):
@@ -570,7 +618,7 @@ class ReasoningEngine:
 # ---------------------------------------------------------------------------
 # CLI / self-test
 # ---------------------------------------------------------------------------
-def load_catalog_files():
+def load_catalog_files() -> tuple[JsonObject, JsonObject]:
     with open(META_MODEL_PATH) as f:
         meta = json.load(f)
     with open(CATALOG_PATH) as f:
@@ -578,11 +626,11 @@ def load_catalog_files():
     return meta, cat
 
 
-def print_json(obj):
+def print_json(obj: JsonValue) -> None:
     print(json.dumps(obj, indent=2, ensure_ascii=False))
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser(description="Catalog reasoning engine (Layer 3)")
     ap.add_argument("--tool", choices=["get_meta_model", "search_nodes", "traverse_graph", "evaluate_rule", "conflicts", "validate", "selftest"],
                     default="selftest")
@@ -659,12 +707,14 @@ def main():
             print(f"[Reason] approval rule fail-case -> {r2['status']} ({r2['result']})")
 
             conf = eng.store.detect_conflicts()
-            print(f"[Verify] conflict/supersede edges detected: {[c['id'] for c in conf]}")
-            for c in conf:
+            supersessions = eng.store.detect_supersessions()
+            print(f"[Verify] conflict edges detected: {[c['id'] for c in conf]}")
+            print(f"[Verify] supersession edges detected: {[e['id'] for e in supersessions]}")
+            for c in conf + supersessions:
                 print(f"           {c['from']} --{c['relation']}-> {c['to']} | {c.get('resolution_rule') or c.get('reason')}")
             if r1["status"] != "passed" or r2["status"] != "failed":
                 raise AssertionError("approval rule self-test failed")
-            if not any(edge["relation"] == "SUPERSEDES" for edge in conf):
+            if not supersessions:
                 raise AssertionError("supersession self-test failed")
             if not any(
                 edge["resolution_rule"]

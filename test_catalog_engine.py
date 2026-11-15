@@ -98,6 +98,27 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(self.engine.evaluate_rule(rule_id, approved)["status"], "passed")
         self.assertEqual(self.engine.evaluate_rule(rule_id, unapproved)["status"], "failed")
 
+    def test_status_filter_parses_serialized_epistemic_state(self):
+        state = self.store.conn.execute(
+            "SELECT epistemic_state FROM nodes WHERE id=?",
+            ("node-artifact-design-md",),
+        ).fetchone()["epistemic_state"]
+        self.store.conn.execute(
+            "UPDATE nodes SET epistemic_state=? WHERE id=?",
+            (json.dumps(json.loads(state), separators=(",", ":")), "node-artifact-design-md"),
+        )
+        self.store.conn.commit()
+        results = self.engine.search_nodes(
+            filters={"status": "canonical"},
+        )
+        self.assertIn("node-artifact-design-md", {node["id"] for node in results})
+
+    def test_conflicts_and_supersessions_are_returned_separately(self):
+        conflicts = self.store.detect_conflicts()
+        supersessions = self.store.detect_supersessions()
+        self.assertTrue(all(edge["relation"] != "SUPERSEDES" for edge in conflicts))
+        self.assertTrue(all(edge["relation"] == "SUPERSEDES" for edge in supersessions))
+
     def test_invalid_load_keeps_existing_catalog(self):
         invalid = copy.deepcopy(self.catalog)
         invalid["edges"][0]["to"] = "missing-node"
