@@ -111,7 +111,26 @@
         "reason": { "type": ["string", "null"] },
         "resolution_rule": { "type": ["string", "null"] },
         "epistemic_state": { "$ref": "#/$defs/epistemic_state" }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "relation": { "enum": ["CONFLICTS_WITH", "CONTRADICTS"] }
+            },
+            "required": ["relation"]
+          },
+          "then": {
+            "properties": {
+              "resolution_rule": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["resolution_rule"]
+          }
+        }
+      ]
     },
     "rule": {
       "type": "object",

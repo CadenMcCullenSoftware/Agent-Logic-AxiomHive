@@ -14,8 +14,9 @@ Store: SQLite (nodes, edges, rules tables).  Backed by catalog-meta-model.json
 
 Usage:
   python3 catalog_engine.py                 # interactive demo / self-test
-  python3 catalog_engine.py --tool get_meta_model
-  python3 catalog_engine.py --tool search_nodes --query "approval"
+  python3 catalog_engine.py --tool validate  # validate schema, graph, and provenance references
+  python5 catalog_engine.py --tool get_meta_model
+  python9 catalog_engine.py --tool search_nodes --query "approval"
   python3 catalog_engine.py --tool traverse_graph --node node-rule-approval-required-v2 --depth 2
   python3 catalog_engine.py --tool evaluate_rule --rule node-rule-approval-required-v2 \
         --context '{"action":{"external_or_state_changing":true,"status":"approved","approval":{"required":true,"explicit":true,"prior_to_execution":true}}}'
@@ -23,9 +24,9 @@ Usage:
 import argparse
 import json
 import os
-import re
 import sqlite3
-import sys
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import SchemaError
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 META_MODEL_PATH = os.path.join(BASE_DIR, "catalog-meta-model.json")
@@ -40,8 +41,13 @@ class JsonLogicError(Exception):
     pass
 
 
-def _jl_var(d, var, context):
-    # support dotted paths like "action.approval.required"
+class CatalogValidationError(ValueError):
+    pass
+
+
+def _jl_var(var, context):
+    if not isinstance(var, str):
+        raise JsonLogicError("var expects a string path")
     cur = context
     for part in var.split("."):
         if isinstance(cur, dict) and part in cur:
@@ -51,8 +57,71 @@ def _jl_var(d, var, context):
     return cur
 
 
+def _jl_truthy(value):
+    return not (
+        value is None
+        or value is False
+        or value == 0
+        or value == ""
+        or value == []
+    )
+
+
+def _jl_equal(left, right):
+    if isinstance(left, bool) != isinstance(right, bool):
+        return False
+    if isinstance(left, (int, float)) and not isinstance(left, bool):
+        return isinstance(right, (int, float)) and not isinstance(right, bool) and left == right
+    return type(left) is type(right) and left == right
+
+
+def _is_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def validate_jsonlogic(expr):
+    """Check that an expression uses only supported operators and arities."""
+    if isinstance(expr, (bool, int, float, str)) or expr is None:
+        return
+    if isinstance(expr, list):
+        for item in expr:
+            validate_jsonlogic(item)
+        return
+    if not isinstance(expr, dict) or len(expr) != 1:
+        raise JsonLogicError("each expression object must contain exactly one operator")
+
+    op, value = next(iter(expr.items()))
+    if op == "var":
+        if not isinstance(value, str):
+            raise JsonLogicError("var expects a string path")
+        return
+    if op == "missing":
+        if not isinstance(value, list) or len(value) != 1 or not isinstance(value[0], str):
+            raise JsonLogicError("missing expects [string_var]")
+        return
+    if op in {"==", "!=", ">", "<", "in"}:
+        if not isinstance(value, list) or len(value) != 2:
+            raise JsonLogicError(f"{op} expects [a, b]")
+        for item in value:
+            validate_jsonlogic(item)
+        return
+    if op in {"and", "or"}:
+        if not isinstance(value, list):
+            raise JsonLogicError(f"{op} expects an array")
+        for item in value:
+            validate_jsonlogic(item)
+        return
+    if op == "if":
+        if not isinstance(value, list) or len(value) not in (2, 3):
+            raise JsonLogicError("if expects [cond, then, else?]")
+        for item in value:
+            validate_jsonlogic(item)
+        return
+    raise JsonLogicError(f"unsupported JsonLogic operator: {op}")
+
+
 def evaluate_jsonlogic(expr, context):
-    """Evaluate a JsonLogic-like expression against `context`."""
+    """Evaluate the supported deterministic JsonLogic subset against context."""
     if isinstance(expr, bool):
         return expr
     if isinstance(expr, (int, float, str)) or expr is None:
@@ -66,35 +135,45 @@ def evaluate_jsonlogic(expr, context):
     op, val = next(iter(expr.items()))
 
     if op == "var":
-        if not isinstance(val, str):
-            raise JsonLogicError("var expects a string path")
-        return _jl_var(context, val, context)
+        return _jl_var(val, context)
 
     if op == "==":
         if not isinstance(val, list) or len(val) != 2:
             raise JsonLogicError("== expects [a, b]")
-        return evaluate_jsonlogic(val[0], context) == evaluate_jsonlogic(val[1], context)
+        return _jl_equal(
+            evaluate_jsonlogic(val[0], context),
+            evaluate_jsonlogic(val[1], context),
+        )
 
     if op == "!=":
         if not isinstance(val, list) or len(val) != 2:
             raise JsonLogicError("!= expects [a, b]")
-        return evaluate_jsonlogic(val[0], context) != evaluate_jsonlogic(val[1], context)
+        return not _jl_equal(
+            evaluate_jsonlogic(val[0], context),
+            evaluate_jsonlogic(val[1], context),
+        )
 
     if op == ">":
         if not isinstance(val, list) or len(val) != 2:
             raise JsonLogicError("> expects [a, b]")
-        return evaluate_jsonlogic(val[0], context) > evaluate_jsonlogic(val[1], context)
+        left, right = (evaluate_jsonlogic(item, context) for item in val)
+        if not _is_number(left) or not _is_number(right):
+            raise JsonLogicError("> expects numeric operands")
+        return left > right
 
     if op == "<":
         if not isinstance(val, list) or len(val) != 2:
             raise JsonLogicError("< expects [a, b]")
-        return evaluate_jsonlogic(val[0], context) < evaluate_jsonlogic(val[1], context)
+        left, right = (evaluate_jsonlogic(item, context) for item in val)
+        if not _is_number(left) or not _is_number(right):
+            raise JsonLogicError("< expects numeric operands")
+        return left < right
 
     if op == "and":
         if not isinstance(val, list):
             raise JsonLogicError("and expects an array")
         for item in val:
-            if not evaluate_jsonlogic(item, context):
+            if not _jl_truthy(evaluate_jsonlogic(item, context)):
                 return False
         return True
 
@@ -102,7 +181,7 @@ def evaluate_jsonlogic(expr, context):
         if not isinstance(val, list):
             raise JsonLogicError("or expects an array")
         for item in val:
-            if evaluate_jsonlogic(item, context):
+            if _jl_truthy(evaluate_jsonlogic(item, context)):
                 return True
         return False
 
@@ -111,26 +190,94 @@ def evaluate_jsonlogic(expr, context):
             raise JsonLogicError("in expects [needle, haystack]")
         needle = evaluate_jsonlogic(val[0], context)
         haystack = evaluate_jsonlogic(val[1], context)
-        if not isinstance(haystack, list):
-            return False
-        return needle in haystack
+        if isinstance(haystack, list):
+            return any(_jl_equal(needle, item) for item in haystack)
+        if isinstance(haystack, str) and isinstance(needle, str):
+            return needle in haystack
+        raise JsonLogicError("in expects an array or string as its second operand")
 
     if op == "if":
         if not isinstance(val, list) or len(val) < 2:
             raise JsonLogicError("if expects [cond, then, else?]")
-        cond = evaluate_jsonlogic(val[0], context)
-        if cond:
+        if _jl_truthy(evaluate_jsonlogic(val[0], context)):
             return evaluate_jsonlogic(val[1], context)
         if len(val) > 2:
             return evaluate_jsonlogic(val[2], context)
         return None
 
     if op == "missing":
-        if not isinstance(val, list) or len(val) != 1:
-            raise JsonLogicError("missing expects [var]")
-        return _jl_var(context, val[0], context) is None
+        if not isinstance(val, list) or len(val) != 1 or not isinstance(val[0], str):
+            raise JsonLogicError("missing expects [string_var]")
+        return _jl_var(val[0], context) is None
 
     raise JsonLogicError(f"unsupported JsonLogic operator: {op}")
+
+
+def validate_catalog(catalog, meta_model):
+    """Validate schema structure and graph/provenance references before loading."""
+    try:
+        Draft202012Validator.check_schema(meta_model)
+    except SchemaError as exc:
+        raise CatalogValidationError(f"invalid meta-model schema: {exc}") from exc
+
+    errors = sorted(
+        Draft202012Validator(meta_model).iter_errors(catalog),
+        key=lambda error: tuple(str(part) for part in error.absolute_path),
+    )
+    if errors:
+        details = "; ".join(
+            f"/{'/'.join(map(str, error.absolute_path))}: {error.message}"
+            for error in errors[:10]
+        )
+        if len(errors) > 10:
+            details += f"; and {len(errors) - 10} more validation error(s)"
+        raise CatalogValidationError(f"catalog does not match meta-model: {details}")
+
+    nodes = catalog.get("nodes", [])
+    edges = catalog.get("edges", [])
+    rules = catalog.get("rules", [])
+    node_by_id = {node["id"]: node for node in nodes}
+    if len(node_by_id) != len(nodes):
+        raise CatalogValidationError("catalog contains duplicate node ids")
+    edge_ids = [edge["id"] for edge in edges]
+    if len(set(edge_ids)) != len(edge_ids):
+        raise CatalogValidationError("catalog contains duplicate edge ids")
+    rule_ids = [rule["id"] for rule in rules]
+    if len(set(rule_ids)) != len(rule_ids):
+        raise CatalogValidationError("catalog contains duplicate rule ids")
+
+    for edge in edges:
+        for endpoint in ("from", "to"):
+            if edge[endpoint] not in node_by_id:
+                raise CatalogValidationError(
+                    f"edge {edge['id']!r} has unknown {endpoint} node {edge[endpoint]!r}"
+                )
+
+    artifact_sources = {
+        node.get("source_artifact_id")
+        for node in nodes
+        if node["node_type"] == "Artifact" and node.get("source_artifact_id")
+    }
+    for kind, items in (("node", nodes), ("edge", edges), ("rule", rules)):
+        for item in items:
+            source_id = item.get("epistemic_state", {}).get("source_artifact_id")
+            if source_id is not None and source_id not in artifact_sources:
+                raise CatalogValidationError(
+                    f"{kind} {item['id']!r} cites unknown source artifact {source_id!r}"
+                )
+
+    for rule in rules:
+        node = node_by_id.get(rule["id"])
+        if node is None or node["node_type"] != "Rule":
+            raise CatalogValidationError(
+                f"rule {rule['id']!r} must have a matching Rule node"
+            )
+        try:
+            validate_jsonlogic(rule["logic_payload"])
+        except JsonLogicError as exc:
+            raise CatalogValidationError(
+                f"rule {rule['id']!r} has invalid logic_payload: {exc}"
+            ) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -187,56 +334,62 @@ class CatalogStore:
         self.conn.commit()
 
     def load_catalog(self, catalog, meta_model):
+        validate_catalog(catalog, meta_model)
         c = self.conn.cursor()
-        c.execute("DELETE FROM nodes")
-        c.execute("DELETE FROM edges")
-        c.execute("DELETE FROM rules")
-        c.execute("DELETE FROM meta_model")
-        c.execute(
-            "INSERT INTO meta_model(key, value) VALUES (?, ?)",
-            ("meta_model", json.dumps(meta_model)),
-        )
-        for n in catalog.get("nodes", []):
+        self.conn.execute("BEGIN IMMEDIATE")
+        try:
+            c.execute("DELETE FROM nodes")
+            c.execute("DELETE FROM edges")
+            c.execute("DELETE FROM rules")
+            c.execute("DELETE FROM meta_model")
             c.execute(
-                "INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?)",
-                (
-                    n["id"],
-                    n["node_type"],
-                    n["title"],
-                    n.get("summary"),
-                    json.dumps(n.get("payload")) if n.get("payload") is not None else None,
-                    json.dumps(n["epistemic_state"]),
-                    json.dumps(n.get("validity_scope")) if n.get("validity_scope") is not None else None,
-                    json.dumps(n.get("reasoning_hints")) if n.get("reasoning_hints") is not None else None,
-                    n.get("source_artifact_id"),
-                ),
+                "INSERT INTO meta_model(key, value) VALUES (?, ?)",
+                ("meta_model", json.dumps(meta_model)),
             )
-        for e in catalog.get("edges", []):
-            c.execute(
-                "INSERT INTO edges VALUES (?,?,?,?,?,?,?)",
-                (
-                    e["id"],
-                    e["from"],
-                    e["to"],
-                    e["relation"],
-                    e.get("reason"),
-                    e.get("resolution_rule"),
-                    json.dumps(e["epistemic_state"]),
-                ),
-            )
-        for r in catalog.get("rules", []):
-            c.execute(
-                "INSERT INTO rules VALUES (?,?,?,?,?,?)",
-                (
-                    r["id"],
-                    r["title"],
-                    json.dumps(r["logic_payload"]),
-                    json.dumps(r.get("applies_to", [])),
-                    json.dumps(r["epistemic_state"]),
-                    json.dumps(r.get("validity_scope")) if r.get("validity_scope") is not None else None,
-                ),
-            )
-        self.conn.commit()
+            for n in catalog.get("nodes", []):
+                c.execute(
+                    "INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?)",
+                    (
+                        n["id"],
+                        n["node_type"],
+                        n["title"],
+                        n.get("summary"),
+                        json.dumps(n.get("payload")) if n.get("payload") is not None else None,
+                        json.dumps(n["epistemic_state"]),
+                        json.dumps(n.get("validity_scope")) if n.get("validity_scope") is not None else None,
+                        json.dumps(n.get("reasoning_hints")) if n.get("reasoning_hints") is not None else None,
+                        n.get("source_artifact_id"),
+                    ),
+                )
+            for e in catalog.get("edges", []):
+                c.execute(
+                    "INSERT INTO edges VALUES (?,?,?,?,?,?,?)",
+                    (
+                        e["id"],
+                        e["from"],
+                        e["to"],
+                        e["relation"],
+                        e.get("reason"),
+                        e.get("resolution_rule"),
+                        json.dumps(e["epistemic_state"]),
+                    ),
+                )
+            for r in catalog.get("rules", []):
+                c.execute(
+                    "INSERT INTO rules VALUES (?,?,?,?,?,?)",
+                    (
+                        r["id"],
+                        r["title"],
+                        json.dumps(r["logic_payload"]),
+                        json.dumps(r.get("applies_to", [])),
+                        json.dumps(r["epistemic_state"]),
+                        json.dumps(r.get("validity_scope")) if r.get("validity_scope") is not None else None,
+                    ),
+                )
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
 
     def get_meta_model(self):
         row = self.conn.execute(
@@ -386,7 +539,10 @@ class ReasoningEngine:
         }
 
     def evaluate_rule(self, rule_id, context_vars=None):
-        context_vars = context_vars or {}
+        if context_vars is None:
+            context_vars = {}
+        if not isinstance(context_vars, dict):
+            raise ValueError("rule context must be a JSON object")
         rule = self.store.get_rule(rule_id)
         if not rule:
             raise ValueError(f"unknown rule: {rule_id}")
@@ -428,8 +584,9 @@ def print_json(obj):
 
 def main():
     ap = argparse.ArgumentParser(description="Catalog reasoning engine (Layer 3)")
-    ap.add_argument("--tool", choices=["get_meta_model", "search_nodes", "traverse_graph", "evaluate_rule", "conflicts", "selftest"],
+    ap.add_argument("--tool", choices=["get_meta_model", "search_nodes", "traverse_graph", "evaluate_rule", "conflicts", "validate", "selftest"],
                     default="selftest")
+    ap.add_argument("--database", default=DB_PATH, help="SQLite database path (use :memory: for a temporary store)")
     ap.add_argument("--query", default="")
     ap.add_argument("--node", default="")
     ap.add_argument("--rule", default="")
@@ -440,8 +597,23 @@ def main():
     ap.add_argument("--status", default="")
     args = ap.parse_args()
 
-    meta, cat = load_catalog_files()
-    store = CatalogStore()
+    try:
+        meta, cat = load_catalog_files()
+        validate_catalog(cat, meta)
+    except (OSError, json.JSONDecodeError, CatalogValidationError) as exc:
+        ap.error(str(exc))
+
+    if args.tool == "validate":
+        print_json({
+            "status": "valid",
+            "meta_model_version": cat["meta_model_version"],
+            "nodes": len(cat.get("nodes", [])),
+            "edges": len(cat.get("edges", [])),
+            "rules": len(cat.get("rules", [])),
+        })
+        return
+
+    store = CatalogStore(args.database)
     store.load_catalog(cat, meta)
     eng = ReasoningEngine(store)
 
@@ -490,6 +662,16 @@ def main():
             print(f"[Verify] conflict/supersede edges detected: {[c['id'] for c in conf]}")
             for c in conf:
                 print(f"           {c['from']} --{c['relation']}-> {c['to']} | {c.get('resolution_rule') or c.get('reason')}")
+            if r1["status"] != "passed" or r2["status"] != "failed":
+                raise AssertionError("approval rule self-test failed")
+            if not any(edge["relation"] == "SUPERSEDES" for edge in conf):
+                raise AssertionError("supersession self-test failed")
+            if not any(
+                edge["resolution_rule"]
+                for edge in conf
+                if edge["relation"] == "CONFLICTS_WITH"
+            ):
+                raise AssertionError("conflict-resolution metadata self-test failed")
     finally:
         store.close()
 
