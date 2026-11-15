@@ -1,0 +1,268 @@
+{
+  "schema_version": "1.0.0",
+  "task": {
+    "question": "How should a user-controlled AI assistant document evidence, uncertainty, and approval boundaries when summarizing a task or preparing an action?",
+    "intended_use": "Example instance for a research and planning record",
+    "audience": "Human reviewers and downstream automation",
+    "scope": {
+      "included": [
+        "evidence reporting",
+        "uncertainty disclosure",
+        "approval boundaries",
+        "independent checks"
+      ],
+      "excluded": [
+        "live system execution",
+        "secret or personal data",
+        "legal advice"
+      ],
+      "depth": "focused",
+      "format": "JSON record"
+    },
+    "constraints": {
+      "objective": "Create a traceable, low-risk record that distinguishes evidence from inference.",
+      "decision_variables": [
+        "what claims are made",
+        "what sources support them",
+        "whether an independent check is needed",
+        "whether approval is required before action"
+      ],
+      "hard_constraints": [
+        "must use schema-valid structure",
+        "must separate evidence from inference",
+        "must avoid unsupported causal claims",
+        "must not disclose sensitive information"
+      ],
+      "soft_preferences": [
+        "prefer concise and auditable wording",
+        "prefer explicit uncertainty labeling",
+        "prefer user-controlled approval checkpoints"
+      ],
+      "affected_parties": [
+        "end user",
+        "reviewing human",
+        "downstream automation"
+      ],
+      "tradeoffs": [
+        "more disclosure improves transparency but adds verbosity",
+        "strict approval gates reduce speed but lower risk"
+      ],
+      "feasibility_status": "feasible",
+      "sensitivity_review": "Low sensitivity because the example is illustrative and contains no private data.",
+      "unresolved_constraints": []
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "claim-1",
+      "text": "A user-controlled AI record should separate factual evidence from inferred conclusions to reduce misunderstanding and misuse.",
+      "epistemic_status": "inference",
+      "support_status": "supported",
+      "source_ids": [
+        "source-1",
+        "source-2"
+      ],
+      "uncertainty": "The general principle is well-established in documentation practice, but the exact effect size depends on the workflow and user controls.",
+      "verification_criterion": "Check whether the record explicitly labels evidence, assumptions, and confidence.",
+      "limitations": [
+        "This is a general design claim rather than a measured experimental effect.",
+        "Different contexts may require different documentation depth."
+      ]
+    },
+    {
+      "claim_id": "claim-2",
+      "text": "Explicit approval before state-changing actions is a meaningful risk control when the action can affect users or external systems.",
+      "epistemic_status": "source_reported_fact",
+      "support_status": "partly_supported",
+      "source_ids": [
+        "source-2"
+      ],
+      "uncertainty": "The general principle is supported by governance practice, but this example does not measure a specific deployment outcome.",
+      "verification_criterion": "Confirm that approval metadata is present and required before state-changing actions are marked approved.",
+      "limitations": [
+        "No deployment data is included here.",
+        "Approval requirements vary by system and regulatory context."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "source-1",
+      "title": "Human-provided task brief",
+      "author_or_publisher": "User",
+      "url": null,
+      "publication_date": null,
+      "accessed_date": "2026-11-15",
+      "access_status": "opened_and_reviewed",
+      "source_category": "user_provided",
+      "claims_supported": [
+        "claim-1"
+      ],
+      "support_summary": "The user request specifies a need for evidence-grounded, user-controlled records that clearly separate evidence, assumptions, and approvals.",
+      "relevant_passage_or_result": "The task calls for a structured record that distinguishes evidence from inference and keeps approval boundaries explicit.",
+      "units_and_baseline_checked": false,
+      "limitations": [
+        "This is a design prompt rather than a published technical source.",
+        "No external verification is available for the task wording itself."
+      ]
+    },
+    {
+      "source_id": "source-2",
+      "title": "Governance practices for AI-assisted action workflows",
+      "author_or_publisher": "General industry guidance",
+      "url": "https://example.invalid/governance-ai-actions",
+      "publication_date": "2025-01-15",
+      "accessed_date": "2026-11-15",
+      "access_status": "metadata_only",
+      "source_category": "news_or_commentary",
+      "claims_supported": [
+        "claim-2"
+      ],
+      "support_summary": "Common guidance recommends explicit approvals before actions that can affect users or external systems, especially when agent behavior is not fully deterministic.",
+      "relevant_passage_or_result": "Approval gates are standard for reducing operational and governance risk in automated workflows.",
+      "units_and_baseline_checked": false,
+      "limitations": [
+        "The source is not a peer-reviewed technical study.",
+        "The example does not provide quantified risk reductions."
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "artifact-1",
+      "kind": "script",
+      "identifier": "example-record-generator",
+      "existence_status": "confirmed",
+      "inspection_status": "inspected",
+      "execution_status": "not_run",
+      "purpose": "Demonstrate a schema-valid record for an evidence-grounded AI workflow.",
+      "inputs_outputs_dependencies": [
+        "JSON schema",
+        "example user task",
+        "no external runtime dependencies"
+      ],
+      "risk_review": "This is illustrative and non-executable metadata with no side effects.",
+      "dry_run_or_sandbox_used": true,
+      "result_summary": "A valid example record was assembled to match the schema structure."
+    }
+  ],
+  "reasoning": {
+    "summary": "The record is designed to make the evidence chain auditable while avoiding unsupported causal claims. It documents assumptions, limits, and the role of independent checks without making deterministic claims beyond the stated scope.",
+    "assumptions": [
+      "The schema is the governing artifact for structure.",
+      "The example is illustrative and not a claim about a real deployment.",
+      "User approval should be explicit when an action can change state externally."
+    ],
+    "unknowns": [
+      "The real-world effect of the proposed record in production settings is not measured here.",
+      "The specific approval workflow varies by organization and system risk level."
+    ],
+    "causal_assessment": {
+      "status": "association_only",
+      "proposed_mechanism": "Improved traceability and explicit review gates plausibly reduce misunderstanding and risky execution.",
+      "population_and_context": "General AI-assisted workflows that produce recommendations or actions.",
+      "time_order": "Documentation and approval precede action execution.",
+      "confounders": [
+        "organizational policy",
+        "team culture",
+        "model quality"
+      ],
+      "alternative_explanations": [
+        "Risk reduction may come from governance processes rather than the record format itself.",
+        "Improved documentation may simply shift the burden from one control point to another."
+      ],
+      "evidence_design": "Illustrative schema example, not a causal study.",
+      "claim_limit": "The record should be read as a structured example, not as a measured effectiveness result."
+    },
+    "independent_check": {
+      "performed": false,
+      "method": "none",
+      "independent_of_generator": false,
+      "result": null,
+      "evidence_ids": [],
+      "limitations": [
+        "No separate reviewer or benchmark was conducted for this example."
+      ]
+    },
+    "alternatives_considered": [
+      "A minimal schema-only record without explanation fields",
+      "A purely free-form narrative response",
+      "A fully automated approval workflow without human review"
+    ],
+    "corrections": []
+  },
+  "actions": [
+    {
+      "action_id": "action-1",
+      "action_type": "draft_only",
+      "external_or_state_changing": false,
+      "status": "drafted",
+      "approval": {
+        "required": false,
+        "explicit": false,
+        "prior_to_execution": false,
+        "approver": null,
+        "approved_scope": null,
+        "approval_timestamp": null
+      },
+      "action_summary": "Draft a schema-valid evidence record showing how to separate evidence, assumptions, and approval requirements.",
+      "target": "Example record artifact",
+      "inputs": [
+        "task description",
+        "schema constraints",
+        "example decision context"
+      ],
+      "permissions": [],
+      "effects": [
+        "Creates a traceable example artifact",
+        "Shows how uncertainty and approvals can be represented"
+      ],
+      "side_effects": [
+        "None beyond the example output itself"
+      ],
+      "reversibility": "reversible"
+    }
+  ],
+  "evaluation": {
+    "status": "not_evaluated",
+    "benchmark_claim": "No benchmark run was performed; the output is an example aligned to the provided schema.",
+    "benchmark_details": {
+      "status": "not_run",
+      "model_names_and_versions": [],
+      "test_set": null,
+      "sample_size": null,
+      "scoring_method": null,
+      "results": [],
+      "date": null,
+      "reproducibility_details": null,
+      "known_limitations": []
+    },
+    "limitations": [
+      "This is not a measured or verified performance result.",
+      "No independent benchmark dataset was used."
+    ]
+  },
+  "attribution": {
+    "human_author": "User",
+    "attribution_basis": "user_provided",
+    "ai_role": "supporting_tool",
+    "notes": "The example is assembled from the user-provided schema and task context."
+  },
+  "pre_response_checks": {
+    "scope_adherence": true,
+    "claim_support_reviewed": true,
+    "evidence_inference_separated": true,
+    "uncertainty_disclosed": true,
+    "causal_wording_reviewed": true,
+    "independence_reviewed": true,
+    "constraints_explicit": true,
+    "approval_boundary_respected": true,
+    "privacy_minimized": true,
+    "attribution_accurate": true,
+    "capability_claims_accurate": true,
+    "notes": [
+      "The response remains within the schema and does not claim empirical validation.",
+      "No sensitive or private data was added."
+    ]
+  }
+}

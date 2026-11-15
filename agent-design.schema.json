@@ -1,0 +1,1025 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/agent-design.schema.json",
+  "title": "Evidence-Grounded, User-Controlled Agent Record",
+  "description": "Validates the structure of an assistant research or reasoning record. Schema conformance does not prove factual truth, source quality, independent verification, or safe execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task",
+    "claims",
+    "sources",
+    "artifacts",
+    "reasoning",
+    "actions",
+    "evaluation",
+    "attribution",
+    "pre_response_checks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question",
+        "intended_use",
+        "audience",
+        "scope",
+        "constraints"
+      ],
+      "properties": {
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intended_use": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "audience": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "included",
+            "excluded",
+            "depth",
+            "format"
+          ],
+          "properties": {
+            "included": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "excluded": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "depth": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "format": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "constraints": {
+          "$ref": "#/$defs/optimization"
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "reasoning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "assumptions",
+        "unknowns",
+        "causal_assessment",
+        "independent_check"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "causal_assessment": {
+          "$ref": "#/$defs/causal_assessment"
+        },
+        "independent_check": {
+          "$ref": "#/$defs/independent_check"
+        },
+        "alternatives_considered": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "corrections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "previous_claim",
+              "reason",
+              "new_evidence_or_error"
+            ],
+            "properties": {
+              "previous_claim": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "new_evidence_or_error": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "benchmark_claim",
+        "benchmark_details",
+        "limitations"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_evaluated",
+            "proposed_test",
+            "tested",
+            "independently_reviewed"
+          ]
+        },
+        "benchmark_claim": {
+          "type": "string"
+        },
+        "benchmark_details": {
+          "$ref": "#/$defs/benchmark"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "tested",
+                  "independently_reviewed"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "benchmark_details": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": "completed"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "attribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "human_author",
+        "attribution_basis",
+        "ai_role"
+      ],
+      "properties": {
+        "human_author": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "attribution_basis": {
+          "enum": [
+            "user_provided",
+            "independently_verified",
+            "not_specified"
+          ]
+        },
+        "ai_role": {
+          "const": "supporting_tool"
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "pre_response_checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope_adherence",
+        "claim_support_reviewed",
+        "evidence_inference_separated",
+        "uncertainty_disclosed",
+        "causal_wording_reviewed",
+        "independence_reviewed",
+        "constraints_explicit",
+        "approval_boundary_respected",
+        "privacy_minimized",
+        "attribution_accurate",
+        "capability_claims_accurate"
+      ],
+      "properties": {
+        "scope_adherence": {
+          "type": "boolean"
+        },
+        "claim_support_reviewed": {
+          "type": "boolean"
+        },
+        "evidence_inference_separated": {
+          "type": "boolean"
+        },
+        "uncertainty_disclosed": {
+          "type": "boolean"
+        },
+        "causal_wording_reviewed": {
+          "type": "boolean"
+        },
+        "independence_reviewed": {
+          "type": "boolean"
+        },
+        "constraints_explicit": {
+          "type": "boolean"
+        },
+        "approval_boundary_respected": {
+          "type": "boolean"
+        },
+        "privacy_minimized": {
+          "type": "boolean"
+        },
+        "attribution_accurate": {
+          "type": "boolean"
+        },
+        "capability_claims_accurate": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "text",
+        "epistemic_status",
+        "support_status",
+        "source_ids",
+        "uncertainty"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "epistemic_status": {
+          "enum": [
+            "source_reported_fact",
+            "direct_observation",
+            "calculation",
+            "inference",
+            "causal_hypothesis",
+            "opinion_or_recommendation",
+            "unknown"
+          ]
+        },
+        "support_status": {
+          "enum": [
+            "supported",
+            "partly_supported",
+            "unsupported",
+            "conflicting_evidence",
+            "unverified",
+            "not_applicable"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "uncertainty": {
+          "type": "string"
+        },
+        "verification_criterion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "title",
+        "author_or_publisher",
+        "url",
+        "publication_date",
+        "accessed_date",
+        "access_status",
+        "source_category",
+        "claims_supported",
+        "support_summary",
+        "limitations"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "author_or_publisher": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "publication_date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accessed_date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "access_status": {
+          "enum": [
+            "opened_and_reviewed",
+            "metadata_only",
+            "inaccessible",
+            "not_checked"
+          ]
+        },
+        "source_category": {
+          "enum": [
+            "peer_reviewed_research",
+            "preprint",
+            "legal_authority",
+            "government_publication",
+            "technical_standard",
+            "recognized_institutional_research",
+            "primary_data",
+            "news_or_commentary",
+            "user_provided",
+            "other"
+          ]
+        },
+        "claims_supported": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "support_summary": {
+          "type": "string"
+        },
+        "relevant_passage_or_result": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "units_and_baseline_checked": {
+          "type": "boolean"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "kind",
+        "identifier",
+        "existence_status",
+        "inspection_status",
+        "execution_status",
+        "risk_review"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "script",
+            "file",
+            "command",
+            "package",
+            "dataset",
+            "other"
+          ]
+        },
+        "identifier": {
+          "type": "string"
+        },
+        "existence_status": {
+          "enum": [
+            "confirmed",
+            "absent",
+            "inaccessible",
+            "not_checked"
+          ]
+        },
+        "inspection_status": {
+          "enum": [
+            "inspected",
+            "not_inspected",
+            "not_applicable"
+          ]
+        },
+        "execution_status": {
+          "enum": [
+            "ran_successfully",
+            "ran_with_error",
+            "not_run",
+            "not_applicable"
+          ]
+        },
+        "purpose": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inputs_outputs_dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "risk_review": {
+          "type": "string"
+        },
+        "dry_run_or_sandbox_used": {
+          "type": "boolean"
+        },
+        "result_summary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "causal_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "proposed_mechanism",
+        "population_and_context",
+        "time_order",
+        "confounders",
+        "alternative_explanations",
+        "evidence_design",
+        "claim_limit"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_assessed",
+            "association_only",
+            "causal_evidence_limited",
+            "causal_support_in_stated_scope",
+            "causal_claim_not_supported"
+          ]
+        },
+        "proposed_mechanism": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "population_and_context": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "time_order": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "confounders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alternative_explanations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_design": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "claim_limit": {
+          "type": "string"
+        }
+      }
+    },
+    "independent_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "performed",
+        "method",
+        "independent_of_generator",
+        "result",
+        "evidence_ids",
+        "limitations"
+      ],
+      "properties": {
+        "performed": {
+          "type": "boolean"
+        },
+        "method": {
+          "enum": [
+            "primary_source_review",
+            "separate_calculation",
+            "held_out_data",
+            "independent_test",
+            "independent_reviewer",
+            "same_model_repass",
+            "none"
+          ]
+        },
+        "independent_of_generator": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "method": {
+                "const": "same_model_repass"
+              }
+            },
+            "required": [
+              "method"
+            ]
+          },
+          "then": {
+            "properties": {
+              "independent_of_generator": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "optimization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objective",
+        "decision_variables",
+        "hard_constraints",
+        "soft_preferences",
+        "affected_parties",
+        "tradeoffs",
+        "feasibility_status",
+        "sensitivity_review"
+      ],
+      "properties": {
+        "objective": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "decision_variables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hard_constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "soft_preferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "affected_parties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tradeoffs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "feasibility_status": {
+          "enum": [
+            "not_applicable",
+            "feasible",
+            "infeasible",
+            "uncertain"
+          ]
+        },
+        "sensitivity_review": {
+          "type": "string"
+        },
+        "unresolved_constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_id",
+        "action_type",
+        "external_or_state_changing",
+        "status",
+        "approval",
+        "action_summary",
+        "target",
+        "inputs",
+        "effects",
+        "side_effects",
+        "reversibility"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string"
+        },
+        "action_type": {
+          "enum": [
+            "draft_only",
+            "read_only",
+            "external_message",
+            "publish",
+            "purchase",
+            "delete",
+            "submit",
+            "access_change",
+            "data_disclosure",
+            "other"
+          ]
+        },
+        "external_or_state_changing": {
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "not_started",
+            "drafted",
+            "awaiting_approval",
+            "approved",
+            "declined",
+            "completed",
+            "blocked"
+          ]
+        },
+        "approval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required",
+            "explicit",
+            "prior_to_execution",
+            "approver",
+            "approved_scope"
+          ],
+          "properties": {
+            "required": {
+              "type": "boolean"
+            },
+            "explicit": {
+              "type": "boolean"
+            },
+            "prior_to_execution": {
+              "type": "boolean"
+            },
+            "approver": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "approved_scope": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "approval_timestamp": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "action_summary": {
+          "type": "string"
+        },
+        "target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "side_effects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reversibility": {
+          "enum": [
+            "reversible",
+            "partly_reversible",
+            "irreversible",
+            "unknown"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "external_or_state_changing": {
+                "const": true
+              },
+              "status": {
+                "enum": [
+                  "approved",
+                  "completed"
+                ]
+              }
+            },
+            "required": [
+              "external_or_state_changing",
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "approval": {
+                "properties": {
+                  "required": {
+                    "const": true
+                  },
+                  "explicit": {
+                    "const": true
+                  },
+                  "prior_to_execution": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "benchmark": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "model_names_and_versions",
+        "test_set",
+        "scoring_method",
+        "results",
+        "date",
+        "reproducibility_details"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_run",
+            "proposed",
+            "completed"
+          ]
+        },
+        "model_names_and_versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "test_set": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sample_size": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "scoring_method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reproducibility_details": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "known_limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
