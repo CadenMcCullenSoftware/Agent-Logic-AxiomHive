@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Meta-model &bull; Catalog Engine{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Meta-model (Layer 1 Grammar)</h1>
+  <p>The meta-model defines the allowed node types, edge types, rule types, and required epistemic metadata for the catalog.</p>
+
+  <h2>Node types</h2>
+  <ul>
+    {% for nt in meta_model["$defs"]["node"]["properties"]["node_type"]["enum"] %}
+    <li>{{ nt }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Edge relations</h2>
+  <ul>
+    {% for rel in meta_model["$defs"]["edge"]["properties"]["relation"]["enum"] %}
+    <li>{{ rel }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Epistemic state statuses</h2>
+  <ul>
+    {% for s in meta_model["$defs"]["epistemic_state"]["properties"]["status"]["enum"] %}
+    <li>{{ s }}</li>
+    {% endfor %}
+  </ul>
+
+  <details>
+    <summary>Raw meta-model JSON</summary>
+    <pre>{{ meta_model | tojson(indent=2) }}</pre>
+  </details>
+</section>
+{% endblock %}

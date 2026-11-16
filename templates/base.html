@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Catalog Reasoning Engine{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="{{ url_for('index') }}" class="brand">Catalog Engine</a>
+      <div class="links">
+        <a href="{{ url_for('index') }}">Dashboard</a>
+        <a href="{{ url_for('meta_model') }}">Meta-model</a>
+        <a href="{{ url_for('nodes') }}">Nodes</a>
+        <a href="{{ url_for('traverse') }}">Traverse</a>
+        <a href="{{ url_for('evaluate_form') }}">Evaluate Rule</a>
+        <a href="{{ url_for('relationships') }}">Relationships</a>
+        <a href="{{ url_for('validate') }}">Validate</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    {% block messages %}{% endblock %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    Catalog Reasoning Engine &mdash; evidence-grounded, user-controlled research assistant design.
+  </footer>
+</body>
+</html>

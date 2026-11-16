@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Relationships &bull; Catalog Engine{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Conflicts &amp; Supersessions</h1>
+  <p>Detect edges that record conflicts/contradictions and supersessions in the catalog.</p>
+
+  <form method="get" action="{{ url_for('relationships') }}" class="search-form">
+    <label>
+      <span>Filter by node ID (optional)</span>
+      <input type="text" name="node" value="{{ node_id }}" placeholder="e.g. node-rule-approval-required-v2">
+    </label>
+    <button type="submit">Filter</button>
+  </form>
+
+  <h2>Conflicts / Contradictions</h2>
+  {% if conflicts %}
+  <table>
+    <thead><tr><th>Edge ID</th><th>From</th><th>To</th><th>Resolution rule</th></tr></thead>
+    <tbody>
+      {% for c in conflicts %}
+      <tr>
+        <td>{{ c.id }}</td>
+        <td>{{ c.from }}</td>
+        <td>{{ c.to }}</td>
+        <td>{{ c.resolution_rule or "&mdash;" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>None.</p>
+  {% endif %}
+
+  <h2>Supersessions</h2>
+  {% if supersessions %}
+  <table>
+    <thead><tr><th>Edge ID</th><th>From</th><th>To</th><th>Reason</th></tr></thead>
+    <tbody>
+      {% for s in supersessions %}
+      <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.from }}</td>
+        <td>{{ s.to }}</td>
+        <td>{{ s.reason or "&mdash;" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>None.</p>
+  {% endif %}
+</section>
+{% endblock %}
