@@ -229,6 +229,6 @@ Plus optional `notes` (string[]).
 
 ## Validation Notes
 
-- Schema conformance = structural validity only. It does not verify factual accuracy, source quality, or safe execution.
+- Schema conformance indicates structural validity only. It does not verify factual accuracy, source quality, or safe execution.
 - Conditional (`if`/`then`) rules govern approval requirements for actions and benchmark completion for tested evaluations.
 - `same_model_repass` independent checks are explicitly marked `independent_of_generator: false`.

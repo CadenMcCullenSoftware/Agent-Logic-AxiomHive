@@ -1,14 +1,14 @@
 # Agent Docs
 
-This repository contains design documentation and schema artifacts for an evidence-grounded, user-controlled research assistant. It is a specification-heavy documentation project rather than an application codebase: the core value is the policy, evaluation, and record-keeping framework for safely building AI-assisted research and action workflows.
+This repository contains design documentation and schema artifacts for an evidence-grounded, user-controlled research assistant. It is a specification-centric documentation project rather than an application codebase: the core value is the policy, evaluation, and record-keeping framework for safely building AI-assisted research and action workflows.
 
 ## Purpose
 
-The project centers on one idea: an AI assistant should help the user reason and research effectively without usurping the user's judgment, hiding uncertainty, or acting on incomplete evidence.
+The project centers on one idea: an AI assistant should help the user reason and research effectively without superseding user decision authority, hiding uncertainty, or acting on incomplete evidence.
 
 The materials in this repo emphasize:
 
-- evidence-supported claims over confident guessing
+- evidence-supported claims over overconfident assertion without evidence
 - source and artifact verification before citing or acting
 - explicit uncertainty and limitations disclosure
 - user approval before consequential external or state-changing actions
@@ -80,32 +80,46 @@ The design set is organized around the following concerns:
 
 ## Testing and validation status
 
-This repository does not contain an application codebase or an automated test suite.
+The repository includes an executable catalog reasoning engine and a browser-based user interface, both covered by automated tests.
 
 What is present:
 
-- structured specification documents
-- a JSON Schema file for record validation: [agent-design.schema.json](./agent-design.schema.json)
-- an example instance file: [example-agent-record.json](./example-agent-record.json)
-- design and policy documentation intended for review, governance, and implementation planning
+- `catalog_engine.py` — executable semantic reasoning engine over the catalog knowledge graph
+- `app.py` — Flask web UI exposing all engine reasoning tools
+- `test_catalog_engine.py` — unit tests for the catalog engine (11 tests)
+- `test_app.py` — UI tests for the Flask application (17 tests)
+- `requirements.txt` — package manifest (jsonschema, flask)
+- `catalog.db` — SQLite persistence store
+- `.github/workflows/ci.yml` — CI pipeline (test, validate, selftest, compile)
+
+Automated validation includes:
+
+- Unit tests for catalog validation, JsonLogic evaluation, and reasoning engine behavior
+- Catalog schema validation against the meta-model
+- Engine self-test exercising all four reasoning tools
+- Python compilation checks
+
+Run the full test suite:
+
+```
+python3 -m pytest test_catalog_engine.py test_app.py -v
+python3 catalog_engine.py --tool validate
+python3 catalog_engine.py --tool selftest --database :memory:
+python3 -m py_compile catalog_engine.py test_catalog_engine.py app.py test_app.py
+```
 
 What is not present:
 
-- application source code in languages such as Python, JavaScript, TypeScript, Go, or Rust
-- package manifests such as `package.json`, `requirements.txt`, `pyproject.toml`, or `Cargo.toml`
-- automated unit, integration, or end-to-end tests
-- runtime build or CI pipeline files
-
-This means the repository's validation is primarily document and schema review rather than executable software verification. The schema and example record can be checked structurally, but there is no application behavior to exercise in this repo itself.
+- production deployment artifacts or service implementation
 
 ## Code and implementation status
 
-At the moment, this repository is a policy-and-specification project rather than a code implementation. It documents the design of an evidence-grounded, user-controlled reasoning assistant, but it does not include the production code for a deployed assistant, tool layer, or user interface.
+This repository includes an executable reference implementation of the catalog reasoning engine alongside its design documentation. The engine implements four reasoning tools over a SQLite-backed catalog store, and a Flask web UI provides browser-based access to all tools.
 
 In practical terms:
 
-- the repository is best treated as a design reference and governance package
-- implementation work would need to be built separately against the principles in these documents
+- the repository is best treated as a design reference and governance package with an executable reference implementation
+- implementation work would need to be built separately against the principles in these documents for production deployment
 - any code built from this design should still be validated against security, privacy, and evidence-quality requirements before deployment
 
 ## Safe web-sourced references
