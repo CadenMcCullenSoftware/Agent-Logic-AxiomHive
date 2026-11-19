@@ -4,6 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from jsonschema import Draft202012Validator
+
 from catalog_engine import (
     CatalogStore,
     CatalogValidationError,
@@ -23,6 +25,18 @@ def load_inputs():
     return meta_model, catalog
 
 
+class AgentDesignSchemaTests(unittest.TestCase):
+    def test_pre_response_checks_must_all_be_true(self):
+        schema = json.loads((ROOT / "agent-design.schema.json").read_text())
+        checks_schema = schema["properties"]["pre_response_checks"]
+        checks = {name: True for name in checks_schema["required"]}
+        validator = Draft202012Validator(checks_schema)
+
+        self.assertTrue(validator.is_valid(checks))
+        checks["privacy_minimized"] = False
+        self.assertFalse(validator.is_valid(checks))
+
+
 class CatalogValidationTests(unittest.TestCase):
     def setUp(self):
         self.meta_model, self.catalog = load_inputs()
@@ -39,6 +53,13 @@ class CatalogValidationTests(unittest.TestCase):
     def test_rejects_unknown_provenance(self):
         catalog = copy.deepcopy(self.catalog)
         catalog["nodes"][0]["epistemic_state"]["source_artifact_id"] = "missing.md"
+        with self.assertRaisesRegex(CatalogValidationError, "unknown source artifact"):
+            validate_catalog(catalog, self.meta_model)
+
+    def test_rejects_unknown_node_source_artifact(self):
+        catalog = copy.deepcopy(self.catalog)
+        node = next(node for node in catalog["nodes"] if node["node_type"] != "Artifact")
+        node["source_artifact_id"] = "missing.md"
         with self.assertRaisesRegex(CatalogValidationError, "unknown source artifact"):
             validate_catalog(catalog, self.meta_model)
 
@@ -112,6 +133,20 @@ class EngineTests(unittest.TestCase):
             filters={"status": "canonical"},
         )
         self.assertIn("node-artifact-design-md", {node["id"] for node in results})
+
+    def test_status_filter_applies_limit_before_decoding_rows(self):
+        original = self.store._node_from_row
+        decoded = []
+
+        def track_decode(row):
+            decoded.append(row["id"])
+            return original(row)
+
+        self.store._node_from_row = track_decode
+        results = self.engine.search_nodes(filters={"status": "canonical"}, limit=1)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(len(decoded), 1)
 
     def test_conflicts_and_supersessions_are_returned_separately(self):
         conflicts = self.store.detect_conflicts()

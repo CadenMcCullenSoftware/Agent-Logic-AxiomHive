@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from app import app
+from app import _debug_mode_enabled, app
 
 
 class FlaskUITests(unittest.TestCase):
@@ -111,6 +111,25 @@ class FlaskUITests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"failed", response.data)
+
+    def test_evaluate_post_invalid_json_preserves_context(self):
+        context = "{invalid json"
+        response = self.client.post(
+            "/evaluate",
+            data={"rule_id": "node-rule-approval-required-v2", "context": context},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b"Invalid JSON context", response.data)
+        self.assertIn(context.encode(), response.data)
+        self.assertNotIn(b"<h2>Result</h2>", response.data)
+
+    def test_debug_mode_is_limited_to_loopback_hosts(self):
+        self.assertFalse(_debug_mode_enabled("0.0.0.0", True))
+        self.assertFalse(_debug_mode_enabled("192.168.1.5", True))
+        self.assertFalse(_debug_mode_enabled("localhost", True))
+        self.assertTrue(_debug_mode_enabled("127.0.0.1", True))
+        self.assertTrue(_debug_mode_enabled("::1", True))
+        self.assertFalse(_debug_mode_enabled("127.0.0.1", False))
 
     def test_relationships_loads(self):
         response = self.client.get("/relationships")

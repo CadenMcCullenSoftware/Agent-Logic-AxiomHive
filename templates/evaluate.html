@@ -23,6 +23,10 @@
     <button type="submit">Evaluate</button>
   </form>
 
+  {% if error %}
+  <p class="error" role="alert">{{ error }}</p>
+  {% endif %}
+
   {% if result %}
   <h2>Result</h2>
   <table class="detail-table">

@@ -136,4 +136,4 @@ These materials emphasize trustworthy AI design, risk management, and governance
 
 In short, this repository defines a practical framework for building AI research assistants that are transparent, cautious, and accountable. It is most useful for teams designing agent workflows where evidence quality, user control, and operational safety matter more than raw conversational fluency.
 
-The repository itself is documentation-forward and intentionally lightweight: there is no production code or automated test suite here, only the design language, schema, and evidence-grounded safety principles needed to guide implementation elsewhere.
+The repository is documentation-forward and includes an executable reference implementation with automated tests, but does not include production deployment artifacts. It combines design language, schema, and evidence-grounded safety principles with runnable examples to guide implementation elsewhere.

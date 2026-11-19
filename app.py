@@ -16,8 +16,10 @@ Run:
 """
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
+import sys
 import threading
 import webbrowser
 from typing import Any
@@ -37,6 +39,15 @@ CATALOG_PATH = os.path.join(BASE_DIR, "catalog-model.json")
 DB_PATH = os.path.join(BASE_DIR, "catalog.db")
 
 app = Flask(__name__)
+
+
+def _debug_mode_enabled(host: str, requested: bool) -> bool:
+    if not requested:
+        return False
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def load_inputs() -> tuple[dict[str, Any], dict[str, Any]]:
@@ -171,17 +182,23 @@ def evaluate_post():
         context_raw = request.form.get("context", "{}")
         try:
             context_vars = json.loads(context_raw)
-        except json.JSONDecodeError:
-            context_vars = {}
-        result = eng.evaluate_rule(rule_id, context_vars)
+            if not isinstance(context_vars, dict):
+                raise ValueError("JSON context must be an object")
+        except ValueError as exc:
+            result = None
+            error = f"Invalid JSON context: {exc}"
+        else:
+            result = eng.evaluate_rule(rule_id, context_vars)
+            error = None
         rules = eng.store.conn.execute("SELECT id, title FROM rules ORDER BY id").fetchall()
         return render_template(
             "evaluate.html",
             rules=[dict(r) for r in rules],
             result=result,
+            error=error,
             rule_id=rule_id,
             context=context_raw,
-        )
+        ), 400 if error else 200
     finally:
         eng.store.close()
 
@@ -280,11 +297,20 @@ if __name__ == "__main__":
         action="store_true",
         help="Open the default web browser automatically",
     )
-    ap.add_argument(
-        "--no-debug",
+    debug_group = ap.add_mutually_exclusive_group()
+    debug_group.add_argument(
+        "--debug",
+        dest="debug",
         action="store_true",
-        help="Run without Flask debug mode",
+        help="Run with Flask debug mode on loopback hosts only",
     )
+    debug_group.add_argument(
+        "--no-debug",
+        dest="debug",
+        action="store_false",
+        help="Run without Flask debug mode (default)",
+    )
+    ap.set_defaults(debug=False)
     args = ap.parse_args()
 
     url = f"http://{args.host}:{args.port}/"
@@ -295,4 +321,7 @@ if __name__ == "__main__":
 
         threading.Timer(1.25, _open_browser).start()
 
-    app.run(debug=not args.no_debug, host=args.host, port=args.port)
+    debug = _debug_mode_enabled(args.host, args.debug)
+    if args.debug and not debug:
+        print("Warning: debug mode is disabled for non-loopback hosts.", file=sys.stderr)
+    app.run(debug=debug, host=args.host, port=args.port)

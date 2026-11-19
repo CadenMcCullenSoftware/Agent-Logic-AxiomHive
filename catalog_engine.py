@@ -266,11 +266,14 @@ def validate_catalog(catalog: JsonObject, meta_model: JsonObject) -> None:
     }
     for kind, items in (("node", nodes), ("edge", edges), ("rule", rules)):
         for item in items:
-            source_id = item.get("epistemic_state", {}).get("source_artifact_id")
-            if source_id is not None and source_id not in artifact_sources:
-                raise CatalogValidationError(
-                    f"{kind} {item['id']!r} cites unknown source artifact {source_id!r}"
-                )
+            source_ids = [item.get("epistemic_state", {}).get("source_artifact_id")]
+            if kind == "node":
+                source_ids.append(item.get("source_artifact_id"))
+            for source_id in source_ids:
+                if source_id is not None and source_id not in artifact_sources:
+                    raise CatalogValidationError(
+                        f"{kind} {item['id']!r} cites unknown source artifact {source_id!r}"
+                    )
 
     for rule in rules:
         node = node_by_id.get(rule["id"])
@@ -422,19 +425,15 @@ class CatalogStore:
         if filters.get("source_artifact_id"):
             sql += " AND source_artifact_id = ?"
             params.append(filters["source_artifact_id"])
+        if filters.get("status"):
+            sql += " AND json_extract(epistemic_state, '$.status') = ?"
+            params.append(filters["status"])
         sql += " ORDER BY id"
-        if not filters.get("status"):
-            sql += " LIMIT ?"
-            params.append(limit)
+        sql += " LIMIT ?"
+        params.append(limit)
         rows = self.conn.execute(sql, params).fetchall()
         nodes = [self._node_from_row(row) for row in rows]
-        if filters.get("status"):
-            nodes = [
-                node
-                for node in nodes
-                if node["epistemic_state"].get("status") == filters["status"]
-            ]
-        return nodes[:limit]
+        return nodes
 
     def get_node(self, node_id: str) -> JsonObject | None:
         row = self.conn.execute("SELECT * FROM nodes WHERE id=?", (node_id,)).fetchone()
