@@ -15,7 +15,7 @@ This schema validates the structure of an assistant research or reasoning record
 A valid record is a JSON object with these required top-level keys:
 
 | Key | Type | Description |
-|-----|------|-------------|
+| ----- | ------ | ------------- |
 | `schema_version` | `string` (const `"1.0.0"`) | Locks the record to this schema version |
 | `task` | `object` | What was asked, intended use, audience, scope, and constraints |
 | `claims` | `array[claim]` | Every factual or inferential assertion made |
@@ -46,7 +46,7 @@ Defines the boundaries of the work.
 Each claim is a single assertion with full epistemic metadata.
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `claim_id` | string, required, minLength 1 | Stable identifier |
 | `text` | string, required, minLength 1 | The claim itself |
 | `epistemic_status` | enum | `source_reported_fact`, `direct_observation`, `calculation`, `inference`, `causal_hypothesis`, `opinion_or_recommendation`, `unknown` |
@@ -61,7 +61,7 @@ Each claim is a single assertion with full epistemic metadata.
 Describes every external or user-provided source.
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `source_id` | string, required, minLength 1 | Stable identifier |
 | `title` | string, required, minLength 1 | Source title |
 | `author_or_publisher` | string \| null | |
@@ -81,7 +81,7 @@ Describes every external or user-provided source.
 Tracks scripts, files, commands, packages, datasets.
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `artifact_id` | string | Stable identifier |
 | `kind` | enum | `script`, `file`, `command`, `package`, `dataset`, `other` |
 | `identifier` | string | Path, command, package name, etc. |
@@ -99,7 +99,7 @@ Tracks scripts, files, commands, packages, datasets.
 Captures the internal reasoning trace.
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `summary` | string | High-level reasoning summary |
 | `assumptions` | string[] | |
 | `unknowns` | string[] | Things not known |
@@ -111,7 +111,7 @@ Captures the internal reasoning trace.
 ### Causal Assessment
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `status` | enum | `not_assessed`, `association_only`, `causal_evidence_limited`, `causal_support_in_stated_scope`, `causal_claim_not_supported` |
 | `proposed_mechanism` | string \| null | |
 | `population_and_context` | string \| null | |
@@ -124,7 +124,7 @@ Captures the internal reasoning trace.
 ### Independent Check
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `performed` | boolean | |
 | `method` | enum | `primary_source_review`, `separate_calculation`, `held_out_data`, `independent_test`, `independent_reviewer`, `same_model_repass`, `none` |
 | `independent_of_generator` | boolean | `same_model_repass` forces `false` |
@@ -137,7 +137,7 @@ Captures the internal reasoning trace.
 Tracks external or state-changing operations with explicit approval.
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `action_id` | string | Stable identifier |
 | `action_type` | enum | `draft_only`, `read_only`, `external_message`, `publish`, `purchase`, `delete`, `submit`, `access_change`, `data_disclosure`, `other` |
 | `external_or_state_changing` | boolean | |
@@ -156,7 +156,7 @@ Tracks external or state-changing operations with explicit approval.
 ## 7. Evaluation
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `status` | enum | `not_evaluated`, `proposed_test`, `tested`, `independently_reviewed` |
 | `benchmark_claim` | string | |
 | `benchmark_details` | object | Refs `#/$defs/benchmark` |
@@ -167,7 +167,7 @@ Tracks external or state-changing operations with explicit approval.
 ### Benchmark
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `status` | enum | `not_run`, `proposed`, `completed` |
 | `model_names_and_versions` | string[] | |
 | `test_set` | string \| null | |
@@ -181,7 +181,7 @@ Tracks external or state-changing operations with explicit approval.
 ## 8. Attribution
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `human_author` | string \| null | |
 | `attribution_basis` | enum | `user_provided`, `independently_verified`, `not_specified` |
 | `ai_role` | string | Const `"supporting_tool"` |
@@ -208,7 +208,7 @@ Plus optional `notes` (string[]).
 ## 10. Optimization (referenced by task.constraints and $defs)
 
 | Field | Type | Notes |
-|-------|------|-------|
+| ------- | ------ | ------- |
 | `objective` | string \| null | |
 | `decision_variables` | string[] | |
 | `hard_constraints` | string[] | |
