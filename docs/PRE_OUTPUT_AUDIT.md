@@ -47,6 +47,9 @@ A reference validator is provided: `python3 pre_output_audit.py validate docs/pr
 
 ## Implementation notes (reference workspace)
 
-- Current runtime records: workflow/task states, human-review pauses, and `audit_events` in `workspace.db` provide traceability but do not automatically enforce full pre-output semantic auditing.
+- The project workspace captures the checklist fields in this document and validates them with `pre_output_audit.py` before storing an audit record.
+- The workspace also checks claim-ledger metadata (labels, support status, linked source retrieval/review, uncertainty, hypothesis test criteria, and opinion attribution). A release disposition is blocked while claim-ledger blockers remain.
+- These checks are structural and metadata-based. They do not assess claim truth, source quality, safety, privacy, or fairness; the four gate results remain recorded human judgments.
+- Workflow/task states, human-review pauses, and `audit_events` in `workspace.db` provide additional traceability, but do not by themselves establish correct audit judgments.
 - `pre_response_checks` in `agent-design.schema.json` provide structural pre-response gates for agent records; they do not by themselves prove safety, privacy, fairness, or technical accuracy.
 - Before consequential execution, use existing confirmation/review controls (`platform_cli.py --confirm`, UI workflow confirmation, manual review tasks) and record outcomes in audit logs.

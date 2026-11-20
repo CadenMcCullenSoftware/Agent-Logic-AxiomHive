@@ -67,8 +67,8 @@ Open `http://127.0.0.1:5000/workspace` to create and organize projects. The exis
 The workspace stores application records in `workspace.db`, separate from the semantic catalog database. It includes:
 
 - projects with objectives, linked notes, and collected source records
-- a claim ledger labeled evidence, inference, hypothesis, or opinion, with source links, support status, uncertainty, and verification criteria
-- pre-output review records with metadata checks and human attestations for safety, privacy, fairness, and technical accuracy
+- a claim ledger labeled evidence, inference, hypothesis, or opinion, with source links, support status, uncertainty, verification criteria, and opinion attribution
+- contract-validated pre-output audit records with scope, gate evidence/issues, information-labeling checks, disposition, and claim-ledger findings
 - user-triggered HTTPS retrieval restricted to public IP addresses, with redirects disabled and a 2 MiB text limit
 - correction records organized by category A–F
 - JSON workflow definitions checked for schema shape, registered modules, dependencies, task configuration, ordering, and agent assignments
@@ -87,6 +87,7 @@ CLI examples:
 python3 platform_cli.py projects
 python3 platform_cli.py validate-workflow workflow.json
 python3 platform_cli.py run-workflow PROJECT_ID workflow.json --confirm
+python3 pre_output_audit.py validate docs/pre_output_audit_checklist.template.json
 ```
 
 This is a local reference implementation, not a production deployment package or hosted multi-user service. Review access control, deployment configuration, and operational requirements before exposing it beyond a trusted local environment.

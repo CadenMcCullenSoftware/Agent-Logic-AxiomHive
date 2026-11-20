@@ -55,7 +55,8 @@ def validate_audit_record(record: Any) -> list[str]:
     for field in ("information_hierarchy_applied", "unsourced_statements_separated"):
         _require(isinstance(record.get(field), bool), f"{field} must be a boolean.", errors)
 
-    _require(record.get("disposition") in VALID_DISPOSITIONS,
+    disposition = record.get("disposition")
+    _require(isinstance(disposition, str) and disposition in VALID_DISPOSITIONS,
              "disposition must be one of: release, revise, block.", errors)
     notes = record.get("notes")
     _require(isinstance(notes, list) and all(isinstance(n, str) for n in notes),
@@ -75,17 +76,25 @@ def validate_audit_record(record: Any) -> list[str]:
             if not isinstance(gate, dict):
                 errors.append(f"gates.{gate_name} must be an object.")
                 continue
-            _require(gate.get("status") in VALID_STATUSES,
+            status = gate.get("status")
+            _require(isinstance(status, str) and status in VALID_STATUSES,
                      f"gates.{gate_name}.status must be pass, fail, or na.", errors)
             for list_field in ("checks", "evidence", "issues"):
                 value = gate.get(list_field)
                 _require(isinstance(value, list) and all(isinstance(item, str) for item in value),
                          f"gates.{gate_name}.{list_field} must be an array of strings.", errors)
-            if gate.get("status") == "fail":
+            if status == "fail":
                 issues = gate.get("issues", [])
                 _require(isinstance(issues, list) and len(issues) > 0,
                          f"gates.{gate_name} with fail status must include at least one issue.", errors)
-            if gate.get("status") == "na":
+            if status == "pass":
+                checks = gate.get("checks", [])
+                evidence = gate.get("evidence", [])
+                _require(isinstance(checks, list) and len(checks) > 0,
+                         f"gates.{gate_name} with pass status must include at least one check.", errors)
+                _require(isinstance(evidence, list) and len(evidence) > 0,
+                         f"gates.{gate_name} with pass status must include supporting evidence.", errors)
+            if status == "na":
                 evidence = gate.get("evidence", [])
                 _require(isinstance(evidence, list) and len(evidence) > 0,
                          f"gates.{gate_name} with na status must include justification evidence.", errors)
