@@ -1,6 +1,6 @@
 # Agent Docs
 
-This repository contains design documentation and schema artifacts for an evidence-grounded, user-controlled research assistant. It is a specification-centric documentation project rather than an application codebase: the core value is the policy, evaluation, and record-keeping framework for safely building AI-assisted research and action workflows.
+This repository contains design documentation and a local browser-based reference workspace for evidence-grounded, user-controlled research operations. The workspace organizes projects, research sources, notes, corrections, predefined workflows, task state, agent coordination records, and an operations log. The policy, evaluation, and record-keeping framework remains the foundation for its implementation.
 
 ## Purpose
 
@@ -53,9 +53,38 @@ These documents expand on the design philosophy and cover important failure mode
 - [complete-appendix.pdf](./complete-appendix.pdf)  
   Supplemental appendix material referenced by the design set.
 
-## What the project is not
+## Workspace implementation
 
-This repo does not contain a deployable application, package, or service implementation. It is best understood as a policy and specification package for AI safety and research assistant design.
+Run the local Flask workspace with:
+
+```
+python3 app.py
+```
+
+Open `http://127.0.0.1:5000/workspace` to create and organize projects. The existing catalog browser remains available at `/`.
+
+The workspace stores application records in `workspace.db`, separate from the semantic catalog database. It includes:
+
+- projects with objectives, linked notes, and collected source records
+- user-triggered HTTPS retrieval restricted to public IP addresses, with redirects disabled and a 2 MiB text limit
+- correction records organized by category A–F
+- JSON workflow definitions checked for schema shape, registered modules, dependencies, task configuration, ordering, and agent assignments
+- ordered task runs with queued, running, completed, failed, skipped, and human-review states
+- registered task operations for source review, note creation, correction organization, and a human-review pause
+- agent role definitions, coordination messages, task assignment references, and audit events
+- a command-line interface for project listing, workflow validation, and explicitly confirmed local workflow execution
+
+Workflow execution invokes only the registered local task types; workflow JSON cannot run shell commands. The six correction categories are stored as A–F because this specification does not define category names. The intended integrated sequence remains a design target; the app does not claim a demonstrated end-to-end research workflow.
+
+CLI examples:
+
+```
+python3 platform_cli.py projects
+python3 platform_cli.py validate-workflow workflow.json
+python3 platform_cli.py run-workflow PROJECT_ID workflow.json --confirm
+```
+
+This is a local reference implementation, not a production deployment package or hosted multi-user service. Review access control, deployment configuration, and operational requirements before exposing it beyond a trusted local environment.
 
 ## How to use this repository
 
@@ -80,14 +109,16 @@ The design set is organized around the following concerns:
 
 ## Testing and validation status
 
-The repository includes an executable catalog reasoning engine and a browser-based user interface, both covered by automated tests.
+The repository includes an executable catalog reasoning engine, a browser-based catalog and project workspace, and automated tests for the catalog engine and existing Flask catalog routes.
 
 What is present:
 
 - `catalog_engine.py` — executable semantic reasoning engine over the catalog knowledge graph
 - `app.py` — Flask web UI exposing all engine reasoning tools
+- `workspace.py` — SQLite-backed project, source, correction, workflow, task, and agent-coordination modules
+- `platform_cli.py` — command-line workspace operations
 - `test_catalog_engine.py` — unit tests for the catalog engine (11 tests)
-- `test_app.py` — UI tests for the Flask application (17 tests)
+- `test_app.py` — UI tests for the existing catalog Flask routes (17 tests)
 - `requirements.txt` — package manifest (jsonschema, flask)
 - `catalog.db` — SQLite persistence store
 - `.github/workflows/ci.yml` — CI pipeline (test, validate, selftest, compile)
@@ -99,27 +130,29 @@ Automated validation includes:
 - Engine self-test exercising all four reasoning tools
 - Python compilation checks
 
+The project-workspace modules were syntax-compiled during this implementation. Automated feature tests for the new project, retrieval, correction, workflow, and agent routes have not been added.
+
 Run the full test suite:
 
 ```
 python3 -m pytest test_catalog_engine.py test_app.py -v
 python3 catalog_engine.py --tool validate
 python3 catalog_engine.py --tool selftest --database :memory:
-python3 -m py_compile catalog_engine.py test_catalog_engine.py app.py test_app.py
+python3 -m py_compile catalog_engine.py workspace.py platform_cli.py app.py test_catalog_engine.py test_app.py
 ```
 
 What is not present:
 
-- production deployment artifacts or service implementation
+- production deployment artifacts, authentication, or hosted multi-user service
 
 ## Code and implementation status
 
-This repository includes an executable reference implementation of the catalog reasoning engine alongside its design documentation. The engine implements four reasoning tools over a SQLite-backed catalog store, and a Flask web UI provides browser-based access to all tools.
+This repository includes an executable reference implementation of the catalog reasoning engine and a local research workspace alongside its design documentation. The catalog engine implements four reasoning tools over a SQLite-backed catalog store. The Flask UI exposes those tools and the project-operations workspace.
 
 In practical terms:
 
-- the repository is best treated as a design reference and governance package with an executable reference implementation
-- implementation work would need to be built separately against the principles in these documents for production deployment
+- the repository is a design and governance package with local reference implementations
+- production deployment work would need to extend and review these reference implementations against the principles in these documents
 - any code built from this design should still be validated against security, privacy, and evidence-quality requirements before deployment
 
 ## Safe web-sourced references

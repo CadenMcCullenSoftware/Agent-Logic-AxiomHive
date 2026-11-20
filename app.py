@@ -31,14 +31,24 @@ from catalog_engine import (
     evaluate_jsonlogic,
     validate_catalog,
 )
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from workspace import (
+    CORRECTION_CATEGORIES,
+    WORKSPACE_DB_PATH,
+    WorkspaceError,
+    WorkspaceStore,
+    retrieve_https_source,
+    validate_workflow_definition,
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 META_MODEL_PATH = os.path.join(BASE_DIR, "catalog-meta-model.json")
 CATALOG_PATH = os.path.join(BASE_DIR, "catalog-model.json")
 DB_PATH = os.path.join(BASE_DIR, "catalog.db")
+WORKSPACE_DB = os.environ.get("WORKSPACE_DB_PATH", WORKSPACE_DB_PATH)
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or os.urandom(32)
 
 
 def _debug_mode_enabled(host: str, requested: bool) -> bool:
@@ -66,6 +76,36 @@ def new_engine(database: str = DB_PATH) -> ReasoningEngine:
     return ReasoningEngine(store)
 
 
+def new_workspace() -> WorkspaceStore:
+    return WorkspaceStore(WORKSPACE_DB)
+
+
+def workflow_draft() -> str:
+    return json.dumps({
+        "name": "Research review",
+        "version": "1.0",
+        "modules": ["projects", "workflows", "tasks", "sources", "corrections"],
+        "steps": [
+            {"id": "review-sources", "title": "Review collected sources",
+             "task_type": "review_sources", "config": {}, "depends_on": []},
+            {"id": "organize-corrections", "title": "Organize corrections",
+             "task_type": "organize_corrections", "config": {},
+             "depends_on": ["review-sources"]},
+            {"id": "human-review", "title": "Present for human review",
+             "task_type": "manual_review",
+             "config": {"prompt": "Review the organized project material."},
+             "depends_on": ["organize-corrections"]},
+        ],
+    }, indent=2)
+
+
+def _project_or_404(store: WorkspaceStore, project_id: str) -> dict[str, Any] | None:
+    project = store.get_project(project_id)
+    if project is None:
+        return None
+    return project
+
+
 @app.get("/")
 def index():
     meta, cat = load_inputs()
@@ -76,6 +116,240 @@ def index():
         edge_count=len(cat.get("edges", [])),
         rule_count=len(cat.get("rules", [])),
     )
+
+
+@app.get("/workspace")
+def workspace_home():
+    store = new_workspace()
+    return render_template("workspace_index.html", projects=store.list_projects())
+
+
+@app.post("/workspace/projects")
+def workspace_create_project():
+    store = new_workspace()
+    try:
+        project_id = store.create_project(
+            request.form.get("name", ""), request.form.get("objective", ""),
+            request.form.get("description", ""),
+        )
+    except WorkspaceError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("workspace_home"))
+    return redirect(url_for("project_detail", project_id=project_id))
+
+
+@app.post("/projects/<project_id>/update")
+def project_update(project_id: str):
+    store = new_workspace()
+    try:
+        store.update_project(
+            project_id, request.form.get("name", ""),
+            request.form.get("objective", ""), request.form.get("description", ""),
+        )
+        flash("Project information updated.", "success")
+    except WorkspaceError as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("project_detail", project_id=project_id))
+
+
+@app.get("/projects/<project_id>")
+def project_detail(project_id: str):
+    store = new_workspace()
+    project = _project_or_404(store, project_id)
+    if project is None:
+        return render_template("error.html", message="Project not found."), 404
+    return render_template(
+        "project.html", project=project, notes=store.list_notes(project_id),
+        sources=store.list_sources(project_id), corrections=store.list_corrections(project_id),
+        workflows=store.list_workflows(project_id),
+    )
+
+
+@app.post("/projects/<project_id>/notes")
+def project_create_note(project_id: str):
+    store = new_workspace()
+    if _project_or_404(store, project_id) is None:
+        return render_template("error.html", message="Project not found."), 404
+    try:
+        store.create_note(project_id, request.form.get("title", ""), request.form.get("body", ""))
+        flash("Project note saved.", "success")
+    except WorkspaceError as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("project_detail", project_id=project_id))
+
+
+@app.post("/projects/<project_id>/sources")
+def project_add_source(project_id: str):
+    store = new_workspace()
+    if _project_or_404(store, project_id) is None:
+        return render_template("error.html", message="Project not found."), 404
+    try:
+        store.add_source(project_id, request.form.get("url", ""), request.form.get("title", ""))
+        flash("Source added to the project.", "success")
+    except WorkspaceError as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("project_detail", project_id=project_id) + "#sources")
+
+
+@app.post("/projects/<project_id>/sources/<source_id>/retrieve")
+def project_retrieve_source(project_id: str, source_id: str):
+    store = new_workspace()
+    source = store.get_source(project_id, source_id)
+    if source is None:
+        return render_template("error.html", message="Source not found for this project."), 404
+    try:
+        content_type, content = retrieve_https_source(source["url"])
+        store.finish_source_retrieval(source_id, content_type=content_type, content=content)
+        flash("Source retrieved and stored for project review.", "success")
+    except WorkspaceError as exc:
+        store.finish_source_retrieval(source_id, error=str(exc))
+        flash(f"Source retrieval failed: {exc}", "error")
+    return redirect(url_for("project_detail", project_id=project_id) + "#sources")
+
+
+@app.get("/projects/<project_id>/sources/<source_id>")
+def project_source_detail(project_id: str, source_id: str):
+    store = new_workspace()
+    project = _project_or_404(store, project_id)
+    source = store.get_source(project_id, source_id)
+    if project is None or source is None:
+        return render_template("error.html", message="Source not found for this project."), 404
+    return render_template("source_detail.html", project=project, source=source)
+
+
+@app.get("/projects/<project_id>/corrections")
+def project_corrections(project_id: str):
+    store = new_workspace()
+    project = _project_or_404(store, project_id)
+    if project is None:
+        return render_template("error.html", message="Project not found."), 404
+    category = request.args.get("category", "")
+    if category and category not in CORRECTION_CATEGORIES:
+        category = ""
+    return render_template(
+        "corrections.html", project=project,
+        corrections=store.list_corrections(project_id, category or None),
+        categories=CORRECTION_CATEGORIES, selected_category=category,
+    )
+
+
+@app.post("/projects/<project_id>/corrections")
+def project_add_correction(project_id: str):
+    store = new_workspace()
+    if _project_or_404(store, project_id) is None:
+        return render_template("error.html", message="Project not found."), 404
+    try:
+        store.create_correction(
+            project_id, request.form.get("category", ""),
+            request.form.get("title", ""), request.form.get("body", ""),
+        )
+        flash("Correction added.", "success")
+    except WorkspaceError as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("project_corrections", project_id=project_id))
+
+
+@app.route("/projects/<project_id>/workflows", methods=["GET", "POST"])
+def project_workflows(project_id: str):
+    store = new_workspace()
+    project = _project_or_404(store, project_id)
+    if project is None:
+        return render_template("error.html", message="Project not found."), 404
+    draft = workflow_draft()
+    errors: list[str] = []
+    if request.method == "POST":
+        draft = request.form.get("definition", "")
+        try:
+            definition = json.loads(draft)
+            agent_ids = {agent["id"] for agent in store.list_agents()}
+            errors = validate_workflow_definition(definition, agent_ids)
+            if request.form.get("action") == "save" and not errors:
+                store.save_workflow(project_id, definition)
+                flash("Validated workflow saved.", "success")
+                return redirect(url_for("project_workflows", project_id=project_id))
+        except (json.JSONDecodeError, TypeError) as exc:
+            errors = [f"Invalid workflow JSON: {exc}"]
+        except WorkspaceError as exc:
+            errors = str(exc).splitlines()
+    return render_template(
+        "workflows.html", project=project, workflows=store.list_workflows(project_id),
+        draft=draft, errors=errors,
+    )
+
+
+@app.post("/projects/<project_id>/workflows/<workflow_id>/run")
+def project_run_workflow(project_id: str, workflow_id: str):
+    if request.form.get("confirm_run") != "yes":
+        flash("Confirm that you want to run this local workflow.", "error")
+        return redirect(url_for("project_workflows", project_id=project_id))
+    try:
+        run = new_workspace().start_workflow(project_id, workflow_id)
+    except WorkspaceError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("project_workflows", project_id=project_id))
+    return redirect(url_for("workflow_run_detail", run_id=run["id"]))
+
+
+@app.get("/runs/<run_id>")
+def workflow_run_detail(run_id: str):
+    run = new_workspace().get_run(run_id)
+    if run is None:
+        return render_template("error.html", message="Workflow run not found."), 404
+    project = new_workspace().get_project(run["project_id"])
+    return render_template("run.html", run=run, project=project)
+
+
+@app.post("/runs/<run_id>/tasks/<task_id>/review")
+def workflow_task_review(run_id: str, task_id: str):
+    store = new_workspace()
+    run = store.get_run(run_id)
+    if run is None or task_id not in {task["id"] for task in run["tasks"]}:
+        return render_template("error.html", message="Task not found for this workflow run."), 404
+    try:
+        store.complete_human_review(task_id, request.form.get("review", ""))
+    except WorkspaceError as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("workflow_run_detail", run_id=run_id))
+
+
+@app.route("/agents", methods=["GET", "POST"])
+def agent_coordination():
+    store = new_workspace()
+    if request.method == "POST":
+        action = request.form.get("action")
+        try:
+            if action == "define":
+                store.create_agent(request.form.get("name", ""), request.form.get("specialty", ""))
+                flash("Agent definition saved.", "success")
+            elif action == "message":
+                store.send_agent_message(
+                    request.form.get("body", ""),
+                    request.form.get("sender_agent_id") or None,
+                    request.form.get("recipient_agent_id") or None,
+                    request.form.get("project_id") or None,
+                )
+                flash("Coordination message recorded.", "success")
+        except WorkspaceError as exc:
+            flash(str(exc), "error")
+        return redirect(url_for("agent_coordination"))
+    return render_template(
+        "agents.html", agents=store.list_agents(), projects=store.list_projects(),
+        messages=store.list_agent_messages(),
+    )
+
+
+@app.get("/operations")
+def operations_log():
+    return render_template("operations.html", events=new_workspace().list_events())
+
+
+@app.post("/api/workflows/validate")
+def api_validate_workflow():
+    body = request.get_json(silent=True) or {}
+    definition = body.get("definition") if isinstance(body, dict) else None
+    agent_ids = {agent["id"] for agent in new_workspace().list_agents()}
+    errors = validate_workflow_definition(definition, agent_ids)
+    return jsonify({"valid": not errors, "errors": errors})
 
 
 @app.get("/meta-model")

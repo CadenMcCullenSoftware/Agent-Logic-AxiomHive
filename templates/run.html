@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Workflow run · Research Workspace{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('project_detail', project_id=run.project_id) }}">← {{ project.name if project else 'Project' }}</a></p>
+<h1>Workflow run</h1>
+<p>Status: <span class="status-pill status-{{ run.status }}">{{ run.status }}</span> · started {{ run.started_at }}</p>
+{% if run.error %}<div class="error">{{ run.error }}</div>{% endif %}
+<ol class="task-list">
+{% for task in run.tasks %}
+  <li class="task-card">
+    <h2>{{ task.title }}</h2>
+    <p><code>{{ task.task_type }}</code> · {{ task.status }}{% if task.assigned_agent_id %} · assigned agent {{ task.assigned_agent_id }}{% endif %}</p>
+    {% if task.error %}<div class="error">{{ task.error }}</div>{% endif %}
+    {% if task.output and task.status != 'awaiting_review' %}<pre>{{ task.output|tojson(indent=2) }}</pre>{% endif %}
+    {% if task.status == 'awaiting_review' %}
+      <p>{{ task.output.prompt }}</p>
+      <form class="search-form" method="post" action="{{ url_for('workflow_task_review', run_id=run.id, task_id=task.id) }}">
+        <label class="wide"><span>Human review result</span><textarea name="review" rows="3" required></textarea></label>
+        <button type="submit">Record review and continue</button>
+      </form>
+    {% endif %}
+  </li>
+{% endfor %}
+</ol>
+{% endblock %}

@@ -30,4 +30,4 @@ jobs:
         run: python3 catalog_engine.py --tool selftest --database :memory:
 
       - name: Compile check
-        run: python3 -m py_compile catalog_engine.py test_catalog_engine.py
+        run: python3 -m py_compile catalog_engine.py workspace.py platform_cli.py app.py test_catalog_engine.py test_app.py

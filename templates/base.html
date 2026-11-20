@@ -9,9 +9,12 @@
 <body>
   <header>
     <nav>
-      <a href="{{ url_for('index') }}" class="brand">Catalog Engine</a>
+      <a href="{{ url_for('workspace_home') }}" class="brand">Research Workspace</a>
       <div class="links">
-        <a href="{{ url_for('index') }}">Dashboard</a>
+        <a href="{{ url_for('workspace_home') }}">Projects</a>
+        <a href="{{ url_for('agent_coordination') }}">Agents</a>
+        <a href="{{ url_for('operations_log') }}">Operations</a>
+        <a href="{{ url_for('index') }}">Catalog</a>
         <a href="{{ url_for('meta_model') }}">Meta-model</a>
         <a href="{{ url_for('nodes') }}">Nodes</a>
         <a href="{{ url_for('traverse') }}">Traverse</a>
@@ -23,12 +26,17 @@
   </header>
 
   <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="messages">
+        {% for category, message in messages %}<div class="{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>{% endfor %}
+      </div>{% endif %}
+    {% endwith %}
     {% block messages %}{% endblock %}
     {% block content %}{% endblock %}
   </main>
 
   <footer>
-    Catalog Reasoning Engine &mdash; evidence-grounded, user-controlled research assistant design.
+    Research Workspace &mdash; authored by Caden McCullen. AI functions support analysis; human users retain decision authority.
   </footer>
 </body>
 </html>

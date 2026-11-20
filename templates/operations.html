@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Operations log · Research Workspace{% endblock %}
+{% block content %}
+<h1>Governance and operations</h1>
+<p>Recent workspace state changes and workflow lifecycle events.</p>
+{% if events %}<table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Record</th><th>Details</th></tr></thead><tbody>
+{% for event in events %}<tr><td>{{ event.created_at }}</td><td>{{ event.actor }}</td><td>{{ event.action }}</td><td>{{ event.entity_type }}<br><code>{{ event.entity_id }}</code></td><td><pre class="compact-json">{{ event.detail|tojson(indent=2) }}</pre></td></tr>{% endfor %}
+</tbody></table>{% else %}<p>No operations have been recorded.</p>{% endif %}
+{% endblock %}

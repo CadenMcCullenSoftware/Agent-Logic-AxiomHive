@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }} · Research Workspace{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('workspace_home') }}">← Projects</a></p>
+<h1>{{ project.name }}</h1>
+<p><strong>Objective:</strong> {{ project.objective }}</p>
+{% if project.description %}<p>{{ project.description }}</p>{% endif %}
+<details class="panel">
+  <summary>Edit project information</summary>
+  <form class="search-form" method="post" action="{{ url_for('project_update', project_id=project.id) }}">
+    <label><span>Project name</span><input name="name" value="{{ project.name }}" required maxlength="200"></label>
+    <label><span>Objective</span><input name="objective" value="{{ project.objective }}" required maxlength="1000"></label>
+    <label class="wide"><span>Description</span><textarea name="description" rows="3">{{ project.description }}</textarea></label>
+    <button type="submit">Save project information</button>
+  </form>
+</details>
+
+<div class="feature-links">
+  <a href="#notes">Project notes ({{ notes|length }})</a>
+  <a href="#sources">Sources ({{ sources|length }})</a>
+  <a href="{{ url_for('project_corrections', project_id=project.id) }}">Corrections ({{ corrections|length }})</a>
+  <a href="{{ url_for('project_workflows', project_id=project.id) }}">Workflows ({{ workflows|length }})</a>
+</div>
+
+<section id="notes" class="panel">
+  <h2>Project notes</h2>
+  <form class="search-form" method="post" action="{{ url_for('project_create_note', project_id=project.id) }}">
+    <label><span>Title</span><input name="title" required maxlength="200"></label>
+    <label class="wide"><span>Note</span><textarea name="body" rows="4" required></textarea></label>
+    <button type="submit">Save note</button>
+  </form>
+  {% for note in notes %}
+    <article class="record"><h3>{{ note.title }}</h3><p class="preserve-lines">{{ note.body }}</p><small>{{ note.created_at }}</small></article>
+  {% else %}<p>No notes have been added.</p>{% endfor %}
+</section>
+
+<section id="sources" class="panel">
+  <h2>Research sources</h2>
+  <p>HTTPS URLs only. Retrieval is limited to public network addresses, does not follow redirects, and stores up to 2 MiB of text per source.</p>
+  <form class="search-form" method="post" action="{{ url_for('project_add_source', project_id=project.id) }}">
+    <label><span>Source URL</span><input name="url" type="url" placeholder="https://example.org/research" required></label>
+    <label><span>Display title</span><input name="title" maxlength="300"></label>
+    <button type="submit">Add source</button>
+  </form>
+  {% if sources %}
+  <table><thead><tr><th>Source</th><th>Status</th><th>Added</th><th>Action</th></tr></thead><tbody>
+    {% for source in sources %}<tr>
+      <td><a href="{{ url_for('project_source_detail', project_id=project.id, source_id=source.id) }}">{{ source.title or source.url }}</a><br><small class="url-text">{{ source.url }}</small></td>
+      <td>{{ source.status }}{% if source.error %}<div class="status-error">{{ source.error }}</div>{% endif %}</td>
+      <td>{{ source.created_at }}</td>
+      <td>{% if source.status != 'retrieved' %}<form method="post" action="{{ url_for('project_retrieve_source', project_id=project.id, source_id=source.id) }}"><button type="submit">Retrieve now</button></form>{% endif %}</td>
+    </tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p>No sources have been collected.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>Corrections</h2>
+  <p>{{ corrections|length }} correction record(s), organized across categories A–F.</p>
+  <a class="button-link" href="{{ url_for('project_corrections', project_id=project.id) }}">Open correction module</a>
+</section>
+
+<section class="panel">
+  <h2>Workflows</h2>
+  {% if workflows %}<ul>{% for workflow in workflows %}<li>{{ workflow.name }} · {{ workflow.created_at }}</li>{% endfor %}</ul>{% else %}<p>No workflows are defined for this project.</p>{% endif %}
+  <a class="button-link" href="{{ url_for('project_workflows', project_id=project.id) }}">Manage workflows</a>
+</section>
+{% endblock %}

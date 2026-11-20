@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Workflows · {{ project.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('project_detail', project_id=project.id) }}">← {{ project.name }}</a></p>
+<h1>Workflow definitions</h1>
+<p>Definitions use the registered task types below. The validator checks the structure, module dependencies, step configuration, ordering, and agent assignments.</p>
+<ul>
+  <li><code>review_sources</code> — summarize source retrieval status.</li>
+  <li><code>record_note</code> — add a configured note to this project.</li>
+  <li><code>organize_corrections</code> — summarize all categories or one A–F category.</li>
+  <li><code>manual_review</code> — pause execution until a human records a review.</li>
+</ul>
+<p>Available modules: <code>projects</code>; <code>notes</code>, <code>sources</code>, and <code>corrections</code> require <code>projects</code>; <code>workflows</code> requires <code>projects</code>; <code>tasks</code> requires <code>projects</code> and <code>workflows</code>; <code>agent_coordination</code> requires <code>tasks</code>.</p>
+
+<section class="panel">
+  <h2>Validate or save a definition</h2>
+  <form method="post" action="{{ url_for('project_workflows', project_id=project.id) }}">
+    <label for="definition">Workflow JSON</label>
+    <textarea id="definition" name="definition" rows="22" class="json-editor" spellcheck="false">{{ draft }}</textarea>
+    <div class="button-row">
+      <button type="submit" name="action" value="validate">Validate definition</button>
+      <button type="submit" name="action" value="save">Validate and save</button>
+    </div>
+  </form>
+  {% if errors %}<div class="error"><strong>Invalid workflow definition</strong><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% elif request.method == 'POST' %}<div class="success">Workflow structure is valid.</div>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>Saved workflows</h2>
+  {% for workflow in workflows %}
+    <article class="record">
+      <h3>{{ workflow.name }}</h3>
+      <p>{{ workflow.definition.steps|length }} ordered task(s) · saved {{ workflow.created_at }}</p>
+      <form method="post" action="{{ url_for('project_run_workflow', project_id=project.id, workflow_id=workflow.id) }}" class="run-form">
+        <label class="confirm-label"><input type="checkbox" name="confirm_run" value="yes" required> I authorize running this local workflow now.</label>
+        <button type="submit">Run workflow</button>
+      </form>
+    </article>
+  {% else %}<p>No saved workflows.</p>{% endfor %}
+</section>
+{% endblock %}

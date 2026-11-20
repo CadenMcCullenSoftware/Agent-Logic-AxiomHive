@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Source · {{ project.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('project_detail', project_id=project.id) }}#sources">← {{ project.name }}</a></p>
+<h1>{{ source.title or source.url }}</h1>
+<p><a href="{{ source.url }}" rel="noreferrer">{{ source.url }}</a></p>
+<p>Status: <strong>{{ source.status }}</strong>{% if source.content_type %} · {{ source.content_type }}{% endif %}</p>
+{% if source.error %}<div class="error">{{ source.error }}</div>{% endif %}
+{% if source.content %}<h2>Retrieved content</h2><pre class="source-content">{{ source.content }}</pre>{% endif %}
+{% endblock %}
