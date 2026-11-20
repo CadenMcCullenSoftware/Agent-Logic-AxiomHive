@@ -19,8 +19,11 @@ Thank you for contributing. This repository combines design guidance with a loca
 - `app.py` — Flask web UI exposing the catalog engine reasoning tools
 - `test_app.py` — UI tests for the Flask application
 - `workspace.py` — SQLite-backed projects, sources, claims, pre-output review records, workflows, and coordination
+- `pre_output_audit.py` — checklist record validator and CLI
 - `templates/` — Flask workspace and catalog pages
+- `docs/` — governance, verification, privacy, and threat-model references
 - `test_workspace.py` — workspace behavior tests
+- `test_pre_output_audit.py` — checklist validator and CLI tests
 
 ## Running checks
 
@@ -30,7 +33,7 @@ The Python catalog engine has tests and a self-test CLI, and the Flask applicati
 python3 -m pytest -v
 python3 catalog_engine.py --tool validate
 python3 catalog_engine.py --tool selftest --database :memory:
-python3 -m py_compile catalog_engine.py workspace.py platform_cli.py app.py
+python3 -m py_compile catalog_engine.py workspace.py platform_cli.py app.py pre_output_audit.py
 ```
 
 Install the dependencies:

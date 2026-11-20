@@ -21,7 +21,7 @@
         {% for status in support_statuses %}<option value="{{ status }}">{{ status|replace('_', ' ')|title }}</option>{% endfor %}
       </select>
     </label>
-    <label class="wide"><span>Support summary</span><textarea name="support_summary" rows="2" maxlength="5000" placeholder="What does the linked material support?"></textarea></label>
+    <label class="wide"><span>Basis or support summary</span><textarea name="support_summary" rows="2" maxlength="5000" placeholder="What supports this statement, or what is the basis for the inference, hypothesis, or opinion?"></textarea></label>
     <label class="wide"><span>Uncertainty or limitations</span><textarea name="uncertainty" rows="2" maxlength="3000" placeholder="Required by the pre-output review for inference, hypothesis, and opinion claims."></textarea></label>
     <label class="wide"><span>How could this claim be checked?</span><textarea name="verification_criterion" rows="2" maxlength="3000"></textarea></label>
     <label class="wide"><span>Attribution for opinion or recommendation</span><input name="attribution" maxlength="500" placeholder="Person or role holding the judgment"></label>
@@ -49,7 +49,7 @@
   <article class="record claim-record">
     <div class="claim-heading"><span class="category-tag">{{ claim.epistemic_class|title }}</span><span class="support-tag">{{ claim.support_status|replace('_', ' ')|title }}</span></div>
     <p class="preserve-lines">{{ claim.text }}</p>
-    {% if claim.support_summary %}<p><strong>Support summary:</strong> {{ claim.support_summary }}</p>{% endif %}
+    {% if claim.support_summary %}<p><strong>Basis or support summary:</strong> {{ claim.support_summary }}</p>{% endif %}
     {% if claim.uncertainty %}<p><strong>Uncertainty and limitations:</strong> {{ claim.uncertainty }}</p>{% endif %}
     {% if claim.verification_criterion %}<p><strong>Verification criterion:</strong> {{ claim.verification_criterion }}</p>{% endif %}
     {% if claim.attribution %}<p><strong>Attributed to:</strong> {{ claim.attribution }}</p>{% endif %}

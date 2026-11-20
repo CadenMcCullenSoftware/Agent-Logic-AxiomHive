@@ -127,13 +127,13 @@ The design set is organized around the following concerns:
 
 ## Testing and validation status
 
-The repository includes an executable catalog reasoning engine, a browser-based catalog and project workspace, automated tests, and reference governance/audit artifacts. In this environment, `python3 -m pytest -q` passes (`50 passed, 14 subtests passed`).
+The repository includes an executable catalog reasoning engine, a browser-based catalog and project workspace, automated tests, and reference governance/audit artifacts. The previously recorded baseline is `50 passed, 14 subtests passed`; the claim-ledger and web audit integration in this working tree has not been executed or tested.
 
 What is present:
 
 - `catalog_engine.py` — executable semantic reasoning engine over the catalog knowledge graph
 - `app.py` — Flask web UI exposing catalog reasoning tools and the project-operations workspace
-- `workspace.py` — SQLite-backed project, source, correction, workflow, task, and agent-coordination modules
+- `workspace.py` — SQLite-backed project, source, claim-ledger, pre-output audit, correction, workflow, task, and agent-coordination modules
 - `platform_cli.py` — command-line workspace operations
 - `pre_output_audit.py` — pre-output audit checklist validator/summarizer
 - `test_catalog_engine.py` — unit tests for the catalog engine (14 tests)

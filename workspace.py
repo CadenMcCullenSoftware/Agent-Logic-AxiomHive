@@ -650,7 +650,7 @@ class WorkspaceStore:
             )]
             for claim in claims:
                 claim["sources"] = [dict(row) for row in db.execute(
-                    "SELECT s.id,s.title,s.url,s.status FROM claim_sources cs "
+                    "SELECT s.id,s.title,s.url,s.status,length(s.content) AS content_length FROM claim_sources cs "
                     "JOIN sources s ON s.id=cs.source_id WHERE cs.claim_id=? ORDER BY s.title,s.url",
                     (claim["id"],),
                 )]
@@ -693,17 +693,19 @@ class WorkspaceStore:
                 add("blocker", "claim_support_unresolved", f"Claim support status is {support_status.replace('_', ' ')}.", claim)
             elif support_status == "partly_supported":
                 add("review", "partial_support", "Claim is only partly supported; preserve its limits in any output.", claim)
-            if support_status == "supported" and not claim.get("support_summary", "").strip():
-                add("blocker", "support_summary_missing", "A supported claim needs a summary of what the linked material supports.", claim)
+            if not claim.get("support_summary", "").strip():
+                add("blocker", "claim_basis_missing", "A claim needs a summary of its supporting evidence, reasoning, provisional basis, or stated rationale.", claim)
             if linked_sources and not claim.get("sources_reviewed"):
                 add("blocker", "source_review_missing", "A reviewer has not attested to checking the linked sources against this claim.", claim)
             for source in linked_sources:
                 if source.get("status") != "retrieved":
                     add("blocker", "source_not_retrieved", f"Linked source is {source.get('status', 'unavailable')}; retrieve and review it before relying on the claim.", claim)
+                elif not source.get("content_length"):
+                    add("blocker", "source_content_empty", "Linked source retrieval produced no stored text to review.", claim)
             if claim_class in {"inference", "hypothesis", "opinion"} and not claim.get("uncertainty", "").strip():
                 add("blocker", "uncertainty_missing", f"{claim_class.title()} claims need an uncertainty or limitation statement.", claim)
-            if claim_class == "inference" and not claim.get("support_summary", "").strip():
-                add("blocker", "reasoning_basis_missing", "An inference needs a recorded reasoning basis tied to its evidence.", claim)
+            if claim_class == "inference" and not linked_sources:
+                add("blocker", "inference_without_evidence", "An inference must link to the evidence it relies on.", claim)
             if claim_class == "hypothesis" and not claim.get("verification_criterion", "").strip():
                 add("blocker", "hypothesis_test_missing", "A hypothesis needs a criterion that could confirm or falsify it.", claim)
             if claim_class == "opinion" and not claim.get("attribution", "").strip():

@@ -8,9 +8,10 @@
 <section class="panel">
   <h2>Record an audit</h2>
   <p>{{ claims|length }} claim record(s) will be checked. Review the <a href="{{ url_for('project_claims', project_id=project.id) }}">claims ledger</a> before selecting a disposition. Use <strong>release</strong> only when applicable gates pass and no claim-ledger blocker remains.</p>
+  <p class="muted">Keep audit notes and evidence references focused. Do not enter secrets or unnecessary personal information.</p>
   {% if errors %}<div class="error"><strong>Audit was not recorded</strong><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
   <form method="post" action="{{ url_for('project_pre_output_audit', project_id=project.id) }}" class="audit-form">
-    <div class="search-form">
+    <div class="search-fields">
       <label><span>Reviewer / actor</span><input name="actor" required maxlength="200" value="{{ form_data.get('actor', '') }}"></label>
       <label><span>Commander or requestor</span><input name="commander_or_requestor" required maxlength="200" value="{{ form_data.get('commander_or_requestor', '') }}"></label>
       <label><span>Output type</span>
@@ -41,7 +42,7 @@
       </fieldset>
     {% endfor %}
 
-    <div class="search-form">
+    <div class="search-fields">
       <label><span>Disposition</span>
         {% set selected_disposition = form_data.get('disposition', '') %}
         <select name="disposition" required>

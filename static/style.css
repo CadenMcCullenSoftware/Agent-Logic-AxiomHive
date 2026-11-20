@@ -308,7 +308,32 @@ summary {
 .check-option input { margin-top: 0.3rem; }
 .check-option span { color: #1f2937; }
 .review-checklist { display: grid; gap: 0.25rem; }
-.audit-form .search-form { margin-bottom: 1rem; }
+.search-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.search-fields label { display: flex; flex-direction: column; gap: 0.25rem; }
+.search-fields label.check-option { flex-direction: row; align-items: flex-start; }
+.search-fields input[type="checkbox"] { width: auto; margin-top: 0.3rem; }
+.search-fields input, .search-fields select, .search-fields textarea {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font: inherit;
+}
+.search-fields button {
+  justify-self: start;
+  border: 0;
+  border-radius: 5px;
+  padding: 0.5rem 0.85rem;
+  background: #111827;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+}
 .audit-gate {
   display: grid;
   gap: 0.75rem;
