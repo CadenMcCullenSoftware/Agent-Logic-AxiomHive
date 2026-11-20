@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluate Rule &bull; Catalog Engine{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Evaluate Rule</h1>
+  <p>Evaluate a JsonLogic rule from the catalog against a JSON context. The engine returns passed/failed/indeterminate.</p>
+
+  <form method="post" action="{{ url_for('evaluate_post') }}" class="search-form">
+    <label>
+      <span>Rule</span>
+      <select name="rule_id" required>
+        {% for r in rules %}
+        <option value="{{ r.id }}" {% if rule_id == r.id %}selected{% endif %}>{{ r.id }} &mdash; {{ r.title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>Context (JSON)</span>
+      <textarea name="context" rows="8">{{ context or '{"action": {"external_or_state_changing": true, "status": "approved", "approval": {"required": true, "explicit": true, "prior_to_execution": true}}}' }}</textarea>
+    </label>
+    <button type="submit">Evaluate</button>
+  </form>
+
+  {% if error %}
+  <p class="error" role="alert">{{ error }}</p>
+  {% endif %}
+
+  {% if result %}
+  <h2>Result</h2>
+  <table class="detail-table">
+    <tr><th>Rule ID</th><td>{{ result.rule_id }}</td></tr>
+    <tr><th>Rule title</th><td>{{ result.rule_title }}</td></tr>
+    <tr><th>Status</th><td><span class="status-{{ result.status }}">{{ result.status }}</span></td></tr>
+    <tr><th>Result</th><td><pre>{{ result.result | tojson(indent=2) }}</pre></td></tr>
+    {% if result.error %}
+    <tr><th>Error</th><td class="error">{{ result.error }}</td></tr>
+    {% endif %}
+    <tr><th>Epistemic state</th><td><pre>{{ result.epistemic_state | tojson(indent=2) }}</pre></td></tr>
+    {% if result.validity_scope %}
+    <tr><th>Validity scope</th><td><pre>{{ result.validity_scope | tojson(indent=2) }}</pre></td></tr>
+    {% endif %}
+  </table>
+  {% endif %}
+</section>
+{% endblock %}

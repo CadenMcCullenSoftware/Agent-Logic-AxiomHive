@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard &bull; Catalog Engine{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Catalog Reasoning Engine</h1>
+  <p>An executable semantic model over the catalog knowledge graph. Use the navigation to exercise the four reasoning tools:</p>
+  <ul class="feature-list">
+    <li><strong>Meta-model</strong> &mdash; view the Layer 1 grammar (node/edge/rule types).</li>
+    <li><strong>Nodes</strong> &mdash; keyword search over nodes with type/status filters.</li>
+    <li><strong>Traverse</strong> &mdash; deterministic subgraph walk from a node.</li>
+    <li><strong>Evaluate Rule</strong> &mdash; JsonLogic rule evaluation against a context.</li>
+    <li><strong>Relationships</strong> &mdash; conflict and supersession edge detection.</li>
+    <li><strong>Validate</strong> &mdash; schema, graph, and provenance validation.</li>
+  </ul>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ meta_model_version }}</div>
+      <div class="stat-label">Meta-model version</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ node_count }}</div>
+      <div class="stat-label">Nodes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ edge_count }}</div>
+      <div class="stat-label">Edges</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ rule_count }}</div>
+      <div class="stat-label">Rules</div>
+    </div>
+  </div>
+</section>
+{% endblock %}

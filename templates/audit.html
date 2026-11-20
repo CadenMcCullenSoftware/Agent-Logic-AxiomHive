@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Pre-output review · {{ project.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('project_detail', project_id=project.id) }}">← {{ project.name }}</a></p>
+<h1>Pre-output review</h1>
+<p>This record captures the output scope, information labeling, unsourced-statement handling, and evidence for safety, privacy, fairness, and technical-accuracy gates. Claim-ledger findings are checked separately. The review records human judgments; it cannot determine whether text is true, fair, safe, or technically correct.</p>
+
+<section class="panel">
+  <h2>Record an audit</h2>
+  <p>{{ claims|length }} claim record(s) will be checked. Review the <a href="{{ url_for('project_claims', project_id=project.id) }}">claims ledger</a> before selecting a disposition. Use <strong>release</strong> only when applicable gates pass and no claim-ledger blocker remains.</p>
+  <p class="muted">Keep audit notes and evidence references focused. Do not enter secrets or unnecessary personal information.</p>
+  {% if errors %}<div class="error"><strong>Audit was not recorded</strong><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+  <form method="post" action="{{ url_for('project_pre_output_audit', project_id=project.id) }}" class="audit-form">
+    <div class="search-fields">
+      <label><span>Reviewer / actor</span><input name="actor" required maxlength="200" value="{{ form_data.get('actor', '') }}"></label>
+      <label><span>Commander or requestor</span><input name="commander_or_requestor" required maxlength="200" value="{{ form_data.get('commander_or_requestor', '') }}"></label>
+      <label><span>Output type</span>
+        <select name="output_type" required>
+          {% set output_type = form_data.get('output_type', '') %}
+          <option value="">Choose a type</option>
+          {% for value in ['text', 'code', 'workflow', 'report', 'other'] %}<option value="{{ value }}" {% if output_type == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="wide"><span>Output scope and boundaries</span><textarea name="output_scope" rows="3" required maxlength="3000">{{ form_data.get('output_scope', '') }}</textarea></label>
+      <label class="check-option wide"><input type="checkbox" name="information_hierarchy_applied" value="yes" {% if form_data.get('information_hierarchy_applied') == 'yes' %}checked{% endif %}><span>Material statements are labeled Evidence, Inference, Hypothesis, or Opinion.</span></label>
+      <label class="check-option wide"><input type="checkbox" name="unsourced_statements_separated" value="yes" {% if form_data.get('unsourced_statements_separated') == 'yes' %}checked{% endif %}><span>Unsourced statements are separated from verified facts.</span></label>
+    </div>
+
+    {% for gate_name, gate_label in checks.items() %}
+      {% set selected_status = form_data.get(gate_name ~ '_status', '') %}
+      <fieldset class="audit-gate">
+        <legend>{{ gate_label }} gate</legend>
+        <label><span>Status</span>
+          <select name="{{ gate_name }}_status" required>
+            <option value="">Choose status</option>
+            {% for value in ['pass', 'fail', 'na'] %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ value|upper }}</option>{% endfor %}
+          </select>
+        </label>
+        <label><span>Checks performed (one per line)</span><textarea name="{{ gate_name }}_checks" rows="3">{{ form_data.get(gate_name ~ '_checks', '') }}</textarea></label>
+        <label><span>Evidence or n/a justification (one per line)</span><textarea name="{{ gate_name }}_evidence" rows="3">{{ form_data.get(gate_name ~ '_evidence', '') }}</textarea></label>
+        <label><span>Issues (one per line; required when status is fail)</span><textarea name="{{ gate_name }}_issues" rows="2">{{ form_data.get(gate_name ~ '_issues', '') }}</textarea></label>
+      </fieldset>
+    {% endfor %}
+
+    <div class="search-fields">
+      <label><span>Disposition</span>
+        {% set selected_disposition = form_data.get('disposition', '') %}
+        <select name="disposition" required>
+          <option value="">Choose disposition</option>
+          {% for value in ['release', 'revise', 'block'] %}<option value="{{ value }}" {% if selected_disposition == value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="wide"><span>Notes (one per line)</span><textarea name="notes" rows="3">{{ form_data.get('notes', '') }}</textarea></label>
+      <button type="submit">Validate and record audit</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Review history</h2>
+  {% for audit in audits %}
+  <article class="record">
+    <h3 class="{{ 'status-passed' if audit.status == 'release' else 'status-failed' }}">{{ audit.status|title }}</h3>
+    <p><strong>Scope:</strong> {{ audit.record.output_scope }}</p>
+    <small>{{ audit.record.timestamp_utc }} · {{ audit.record.actor }} · audit {{ audit.id }}</small>
+    <h4>Gate results</h4>
+    {% for gate_name, gate in audit.record.gates.items() %}
+      <details>
+        <summary>{{ checks.get(gate_name, gate_name|title) }}: {{ gate.status|upper }}</summary>
+        {% if gate.checks %}<p><strong>Checks:</strong></p><ul>{% for item in gate.checks %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+        {% if gate.evidence %}<p><strong>Evidence:</strong></p><ul>{% for item in gate.evidence %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+        {% if gate.issues %}<p><strong>Issues:</strong></p><ul>{% for item in gate.issues %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+      </details>
+    {% endfor %}
+    <p>Information hierarchy applied: {{ 'yes' if audit.record.information_hierarchy_applied else 'no' }} · Unsourced statements separated: {{ 'yes' if audit.record.unsourced_statements_separated else 'no' }}</p>
+    {% if audit.record.notes %}<p><strong>Notes:</strong></p><ul>{% for note in audit.record.notes %}<li>{{ note }}</li>{% endfor %}</ul>{% endif %}
+    {% if audit.findings %}
+    <h4>Claim-ledger findings</h4>
+    <ul class="audit-findings">
+      {% for finding in audit.findings %}
+      <li class="{{ 'status-failed' if finding.severity == 'blocker' else 'status-indeterminate' }}">
+        <strong>{{ finding.severity|title }}:</strong> {{ finding.message }}
+        {% if finding.claim_text %}<blockquote>{{ finding.claim_text }}</blockquote>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p>No claim-ledger findings.</p>{% endif %}
+  </article>
+  {% else %}<p>No pre-output reviews have been recorded.</p>{% endfor %}
+</section>
+{% endblock %}

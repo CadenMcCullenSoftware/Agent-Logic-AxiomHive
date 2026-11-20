@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Node {{ node.id }} &bull; Catalog Engine{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Node: {{ node.id }}</h1>
+  <table class="detail-table">
+    <tr><th>Type</th><td>{{ node.node_type }}</td></tr>
+    <tr><th>Title</th><td>{{ node.title }}</td></tr>
+    <tr><th>Summary</th><td>{{ node.summary or "&mdash;" }}</td></tr>
+    <tr><th>Status</th><td>{{ node.epistemic_state.status }}</td></tr>
+    <tr><th>Confidence</th><td>{{ "%.2f"|format(node.epistemic_state.confidence) }}</td></tr>
+    <tr><th>Source artifact</th><td>{{ node.source_artifact_id or "&mdash;" }}</td></tr>
+    {% if node.validity_scope %}
+    <tr><th>Validity scope</th><td><pre>{{ node.validity_scope | tojson(indent=2) }}</pre></td></tr>
+    {% endif %}
+    {% if node.reasoning_hints %}
+    <tr><th>Reasoning hints</th><td><pre>{{ node.reasoning_hints | tojson(indent=2) }}</pre></td></tr>
+    {% endif %}
+    {% if node.payload %}
+    <tr><th>Payload</th><td><pre>{{ node.payload | tojson(indent=2) }}</pre></td></tr>
+    {% endif %}
+  </table>
+
+  <h2>Incoming edges</h2>
+  {% if incoming %}
+  <table>
+    <thead><tr><th>Edge ID</th><th>From</th><th>Relation</th><th>Reason</th></tr></thead>
+    <tbody>
+      {% for e in incoming %}
+      <tr><td>{{ e.id }}</td><td>{{ e.from }}</td><td>{{ e.relation }}</td><td>{{ e.reason or "&mdash;" }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>None.</p>
+  {% endif %}
+
+  <h2>Outgoing edges</h2>
+  {% if outgoing %}
+  <table>
+    <thead><tr><th>Edge ID</th><th>To</th><th>Relation</th><th>Reason</th></tr></thead>
+    <tbody>
+      {% for e in outgoing %}
+      <tr><td>{{ e.id }}</td><td>{{ e.to }}</td><td>{{ e.relation }}</td><td>{{ e.reason or "&mdash;" }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>None.</p>
+  {% endif %}
+
+  <h2>Conflicts involving this node</h2>
+  {% if conflicts %}
+  <table>
+    <thead><tr><th>Edge ID</th><th>From</th><th>To</th><th>Resolution rule</th></tr></thead>
+    <tbody>
+      {% for c in conflicts %}
+      <tr><td>{{ c.id }}</td><td>{{ c.from }}</td><td>{{ c.to }}</td><td>{{ c.resolution_rule or "&mdash;" }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>None.</p>
+  {% endif %}
+
+  <h2>Supersessions involving this node</h2>
+  {% if supersessions %}
+  <table>
+    <thead><tr><th>Edge ID</th><th>From</th><th>To</th><th>Reason</th></tr></thead>
+    <tbody>
+      {% for s in supersessions %}
+      <tr><td>{{ s.id }}</td><td>{{ s.from }}</td><td>{{ s.to }}</td><td>{{ s.reason or "&mdash;" }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>None.</p>
+  {% endif %}
+
+  <p><a href="{{ url_for('nodes') }}">&larr; Back to node search</a></p>
+</section>
+{% endblock %}

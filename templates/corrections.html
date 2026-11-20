@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Corrections · {{ project.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('project_detail', project_id=project.id) }}">← {{ project.name }}</a></p>
+<h1>Correction module</h1>
+<p>Corrections are stored with a category from the A–F classification structure. Category names are kept literal until the project defines their meanings.</p>
+
+<section class="panel">
+  <h2>Add correction</h2>
+  <form class="search-form" method="post" action="{{ url_for('project_add_correction', project_id=project.id) }}">
+    <label><span>Category</span><select name="category" required>{% for category in categories %}<option value="{{ category }}">Category {{ category }}</option>{% endfor %}</select></label>
+    <label><span>Title</span><input name="title" maxlength="200" required></label>
+    <label class="wide"><span>Correction details</span><textarea name="body" rows="4" required></textarea></label>
+    <button type="submit">Save correction</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Organize corrections</h2>
+  <nav class="category-filter"><a href="{{ url_for('project_corrections', project_id=project.id) }}">All</a>{% for category in categories %}<a href="{{ url_for('project_corrections', project_id=project.id, category=category) }}">{{ category }}</a>{% endfor %}</nav>
+  <p>{% if selected_category %}Category {{ selected_category }}{% else %}All categories{% endif %}</p>
+  {% for correction in corrections %}
+    <article class="record"><span class="category-tag">{{ correction.category }}</span><h3>{{ correction.title }}</h3><p class="preserve-lines">{{ correction.body }}</p><small>{{ correction.status }} · {{ correction.created_at }}</small></article>
+  {% else %}<p>No corrections match this view.</p>{% endfor %}
+</section>
+{% endblock %}

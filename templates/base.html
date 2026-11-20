@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Catalog Reasoning Engine{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="{{ url_for('workspace_home') }}" class="brand">Research Workspace</a>
+      <div class="links">
+        <a href="{{ url_for('workspace_home') }}">Projects</a>
+        <a href="{{ url_for('agent_coordination') }}">Agents</a>
+        <a href="{{ url_for('operations_log') }}">Operations</a>
+        <a href="{{ url_for('index') }}">Catalog</a>
+        <a href="{{ url_for('meta_model') }}">Meta-model</a>
+        <a href="{{ url_for('nodes') }}">Nodes</a>
+        <a href="{{ url_for('traverse') }}">Traverse</a>
+        <a href="{{ url_for('evaluate_form') }}">Evaluate Rule</a>
+        <a href="{{ url_for('relationships') }}">Relationships</a>
+        <a href="{{ url_for('validate') }}">Validate</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="messages">
+        {% for category, message in messages %}<div class="{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>{% endfor %}
+      </div>{% endif %}
+    {% endwith %}
+    {% block messages %}{% endblock %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    Research Workspace &mdash; authored by Caden McCullen. AI functions support analysis; human users retain decision authority.
+  </footer>
+</body>
+</html>

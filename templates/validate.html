@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Validate Catalog &bull; Catalog Engine{% endblock %}
+
+{% block content %}
+<section>
+  <h1>Catalog Validation</h1>
+  <p>Validates the catalog against the meta-model schema, checks graph/provenance references, duplicate IDs, and rule logic payloads.</p>
+
+  {% if valid %}
+  <div class="success">Catalog is <strong>valid</strong>.</div>
+  <table class="detail-table">
+    {% for k, v in summary.items() %}
+    <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="error">Catalog validation <strong>failed</strong>.</div>
+  {% if error %}
+  <pre class="error">{{ error }}</pre>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

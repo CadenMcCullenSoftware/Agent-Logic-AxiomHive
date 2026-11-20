@@ -291,37 +291,37 @@
       ],
       "properties": {
         "scope_adherence": {
-          "type": "boolean"
+          "const": true
         },
         "claim_support_reviewed": {
-          "type": "boolean"
+          "const": true
         },
         "evidence_inference_separated": {
-          "type": "boolean"
+          "const": true
         },
         "uncertainty_disclosed": {
-          "type": "boolean"
+          "const": true
         },
         "causal_wording_reviewed": {
-          "type": "boolean"
+          "const": true
         },
         "independence_reviewed": {
-          "type": "boolean"
+          "const": true
         },
         "constraints_explicit": {
-          "type": "boolean"
+          "const": true
         },
         "approval_boundary_respected": {
-          "type": "boolean"
+          "const": true
         },
         "privacy_minimized": {
-          "type": "boolean"
+          "const": true
         },
         "attribution_accurate": {
-          "type": "boolean"
+          "const": true
         },
         "capability_claims_accurate": {
-          "type": "boolean"
+          "const": true
         },
         "notes": {
           "type": "array",

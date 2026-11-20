@@ -28,7 +28,8 @@ Do **not** use it when there are only a few small independent tasks (direct `age
 
 Before a workflow whose item agents depend on an MCP server, call `server.list` and obey that server description's `Subagents` and `Concurrency` contract.
 
-- Use `sandbox: 'isolated'` when stateful tasks must proceed independently in parallel.
+- Use `sandbox: 'isolated'` when stateful tasks must proceed independently in parallel, when processing untrusted external content, or when least-privilege isolation is required between item agents.
+- Prefer `sandbox: 'isolated'` with explicit `input_files` for independent research items that fetch, browse, or interpret untrusted sources; reserve `sandbox: 'shared'` for cases that require direct delivery of parent-sandbox files and can enforce deterministic, collision-free paths with appropriately scoped tools.
 - Give parallel file-producing agents deterministic, distinct output paths.
 - Keep operations marked parent-only in the parent agent; subagents cannot make them available by retrying through another interface.
 - If a required tool is unavailable or fails, collect and report the blocker. Never fabricate completion, reuse another item's artifact, or substitute a different artifact type unless the task explicitly allows that fallback.
@@ -127,7 +128,7 @@ Use `fail_fast` only when later work would be invalid after any individual failu
 
 ## Confirmation gate
 
-The Host checks confirmation before subagents start: absent an existing auto-start authorization, an estimate or effective budget above 20 requires confirmation (for example, requested 20 becomes effective 22). A pending workflow is **already registered** — never call `workflow/run` again for the same task. Stop the turn and wait; on explicit acceptance use `job` to approve the exact job id, on explicit rejection use `job` to reject it. Never approve without a new user reply. Approval does not remove the saved effective budget.
+The Host checks confirmation before subagents start: absent an existing auto-start authorization, an estimate or effective budget above 20 requires confirmation (for example, requested 20 becomes effective 22). This budget gate is count-based and does not replace consequence-based approval or tool-authorization controls for state-changing, external, or sensitive actions. A pending workflow is **already registered** — never call `workflow/run` again for the same task. Stop the turn and wait; on explicit acceptance use `job` to approve the exact job id, on explicit rejection use `job` to reject it. Never approve without a new user reply. Approval does not remove the saved effective budget.
 
 If the effective budget is exhausted on a compatible Host, the workflow pauses instead of marking the remaining items failed. Do not submit another `workflow/run`. If the effective limit is already 2000, no increase is possible: keep the job paused, inspect retained results and in-flight subtasks with `job list`/`job info`, or use `job kill` to stop. Otherwise, use `job continue` to propose a higher absolute `max_agent_calls` (never above 2000), present that exact total, and repeat it only after a new explicit approving user reply. Never interpret refusal or unrelated input as approval. Completed results are reused. An older Host may instead report that resumable pause is unsupported; do not claim it paused successfully.
 
@@ -200,6 +201,7 @@ Before calling `workflow/run`, verify:
 
 - The task genuinely contains multiple independent units of work — each needing independent research or judgment, not the same deterministic command with different parameters — with one agent per item and no bundling.
 - Item prompts are self-contained; comparable agents share a JSON Schema; the group has a clear user-facing brief.
+- Sandbox and tool scope follow least privilege: prefer `sandbox: 'isolated'` for untrusted or stateful parallel work; use `sandbox: 'shared'` only when necessary and with deterministic, collision-free paths. Budget approval does not substitute for consequence-based authorization of sensitive actions.
 - File paths are deterministic and collision-free; shared-mode outputs are verified by the parent task; inputs are declared as parent-sandbox paths in `input_files`.
 - Discovery and reducer agents are counted in the budgets; `collect` failures are handled explicitly.
 - The script is valid deterministic JavaScript only.

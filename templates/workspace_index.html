@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Projects · Research Workspace{% endblock %}
+{% block content %}
+<h1>Research workspace</h1>
+<p>Organize projects, evidence sources, notes, corrections, and predefined task workflows.</p>
+
+<section class="panel">
+  <h2>Create a project</h2>
+  <form class="search-form" method="post" action="{{ url_for('workspace_create_project') }}">
+    <label><span>Project name</span><input name="name" required maxlength="200"></label>
+    <label><span>Objective</span><input name="objective" required maxlength="1000"></label>
+    <label><span>Description</span><textarea name="description" rows="2"></textarea></label>
+    <button type="submit">Create project</button>
+  </form>
+</section>
+
+<h2>Projects</h2>
+{% if projects %}
+  <div class="project-grid">
+  {% for project in projects %}
+    <article class="project-card">
+      <h3><a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a></h3>
+      <p>{{ project.objective }}</p>
+      {% if project.description %}<p class="muted">{{ project.description }}</p>{% endif %}
+      <small>{{ project.status }} · updated {{ project.updated_at }}</small>
+    </article>
+  {% endfor %}
+  </div>
+{% else %}
+  <p>No projects yet. Create one to start organizing research work.</p>
+{% endif %}
+{% endblock %}

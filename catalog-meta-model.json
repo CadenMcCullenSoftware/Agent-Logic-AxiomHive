@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/catalog-meta-model.schema.json",
   "title": "Catalog Model Meta-Model",
-  "description": "Grammar of the catalog world: allowed Node types, Edge types, Rule types, and required epistemic metadata. Schema conformance validates structure only; it does not prove factual truth.",
+  "description": "Grammar of the catalog domain: allowed Node types, Edge types, Rule types, and required epistemic metadata. Schema conformance validates structure only; it does not prove factual truth.",
   "type": "object",
   "additionalProperties": false,
   "required": ["meta_model_version", "nodes", "edges"],

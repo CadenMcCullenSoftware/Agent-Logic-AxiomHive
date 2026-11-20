@@ -2,18 +2,18 @@
 """
 catalog_engine.py — Layer 3: The Reasoning Engine.
 
-A small, executable semantic model over the catalog knowledge graph.
+A compact executable semantic model over the catalog knowledge graph.
 Exposes four reasoning tools:
   - get_meta_model()        -> the Layer 1 grammar (node/edge/rule types)
-  - search_nodes(query, filters) -> keyword entry-point search
-  - traverse_graph(node_id, edge_types, depth) -> deterministic subgraph walk
+  - search_nodes(query, filters) -> keyword-based search
+  - traverse_graph(node_id, edge_types, depth) -> deterministic subgraph traversal
   - evaluate_rule(rule_id, context_vars) -> JsonLogic rule evaluation
 
-Store: SQLite (nodes, edges, rules tables).  Backed by catalog-meta-model.json
+Persistence layer: SQLite (nodes, edges, rules tables).  Backed by catalog-meta-model.json
 (Layer 1) and catalog-model.json (Layer 2).
 
 Usage:
-  python3 catalog_engine.py                 # interactive demo / self-test
+  python3 catalog_engine.py                 # CLI demonstration / self-test
   python3 catalog_engine.py --tool validate  # validate schema, graph, and provenance references
   python3 catalog_engine.py --tool get_meta_model
   python3 catalog_engine.py --tool search_nodes --query "approval"
@@ -41,7 +41,7 @@ DB_PATH: str = os.path.join(BASE_DIR, "catalog.db")
 
 
 # ---------------------------------------------------------------------------
-# JsonLogic subset evaluator (deterministic verifier for rule logic_payloads)
+# JsonLogic subset evaluator (deterministic validator for rule logic_payloads)
 # ---------------------------------------------------------------------------
 class JsonLogicError(Exception):
     pass
@@ -86,7 +86,7 @@ def _is_number(value: JsonValue) -> bool:
 
 
 def validate_jsonlogic(expr: JsonValue) -> None:
-    """Check that an expression uses only supported operators and arities."""
+    """Validate that an expression uses only supported operators and arities."""
     if isinstance(expr, (bool, int, float, str)) or expr is None:
         return
     if isinstance(expr, list):
@@ -266,11 +266,14 @@ def validate_catalog(catalog: JsonObject, meta_model: JsonObject) -> None:
     }
     for kind, items in (("node", nodes), ("edge", edges), ("rule", rules)):
         for item in items:
-            source_id = item.get("epistemic_state", {}).get("source_artifact_id")
-            if source_id is not None and source_id not in artifact_sources:
-                raise CatalogValidationError(
-                    f"{kind} {item['id']!r} cites unknown source artifact {source_id!r}"
-                )
+            source_ids = [item.get("epistemic_state", {}).get("source_artifact_id")]
+            if kind == "node":
+                source_ids.append(item.get("source_artifact_id"))
+            for source_id in source_ids:
+                if source_id is not None and source_id not in artifact_sources:
+                    raise CatalogValidationError(
+                        f"{kind} {item['id']!r} cites unknown source artifact {source_id!r}"
+                    )
 
     for rule in rules:
         node = node_by_id.get(rule["id"])
@@ -287,7 +290,7 @@ def validate_catalog(catalog: JsonObject, meta_model: JsonObject) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Store layer (SQLite)
+# Persistence layer (SQLite)
 # ---------------------------------------------------------------------------
 class CatalogStore:
     def __init__(self, db_path: str = DB_PATH) -> None:
@@ -422,19 +425,15 @@ class CatalogStore:
         if filters.get("source_artifact_id"):
             sql += " AND source_artifact_id = ?"
             params.append(filters["source_artifact_id"])
+        if filters.get("status"):
+            sql += " AND json_extract(epistemic_state, '$.status') = ?"
+            params.append(filters["status"])
         sql += " ORDER BY id"
-        if not filters.get("status"):
-            sql += " LIMIT ?"
-            params.append(limit)
+        sql += " LIMIT ?"
+        params.append(limit)
         rows = self.conn.execute(sql, params).fetchall()
         nodes = [self._node_from_row(row) for row in rows]
-        if filters.get("status"):
-            nodes = [
-                node
-                for node in nodes
-                if node["epistemic_state"].get("status") == filters["status"]
-            ]
-        return nodes[:limit]
+        return nodes
 
     def get_node(self, node_id: str) -> JsonObject | None:
         row = self.conn.execute("SELECT * FROM nodes WHERE id=?", (node_id,)).fetchone()
@@ -684,17 +683,17 @@ def main() -> None:
         elif args.tool == "conflicts":
             print_json(eng.store.detect_conflicts(args.node if args.node else None))
         else:
-            # selftest: exercise the 4-step reasoning loop over the catalog
-            print("=== SELF-TEST: Catalog-as-a-Model reasoning loop ===")
+            # selftest: validate the four-step reasoning cycle over the catalog
+            print("=== SELF-TEST: Catalog-as-a-Model reasoning cycle ===")
             mm = eng.get_meta_model()
-            print(f"[Orient] meta_model_version={cat.get('meta_model_version')} node_types={[p for p in mm['$defs']['node']['properties']['node_type']['enum']]}")
+            print(f"[Discovery] meta_model_version={cat.get('meta_model_version')} node_types={[p for p in mm['$defs']['node']['properties']['node_type']['enum']]}")
 
             hits = eng.search_nodes("approval", {"status": "canonical"})
-            print(f"[Extract] search 'approval' canonical -> {[h['id'] for h in hits]}")
+            print(f"[Retrieval] search 'approval' canonical -> {[h['id'] for h in hits]}")
 
             sub = eng.traverse_graph("node-rule-approval-required-v2", depth=2)
             rels = [e["relation"] for e in sub["subgraph"]["edges"]]
-            print(f"[Traverse] v2 approval rule subgraph edges: {rels}")
+            print(f"[Traversal] v2 approval rule subgraph edges: {rels}")
             print(f"           SUPERSEDES present: {'SUPERSEDES' in rels}")
 
             ctx_pass = {"action": {"external_or_state_changing": True, "status": "approved",
@@ -703,13 +702,13 @@ def main() -> None:
                                     "approval": {"required": False, "explicit": True, "prior_to_execution": True}}}
             r1 = eng.evaluate_rule("node-rule-approval-required-v2", ctx_pass)
             r2 = eng.evaluate_rule("node-rule-approval-required-v2", ctx_fail)
-            print(f"[Reason] approval rule pass-case -> {r1['status']} ({r1['result']})")
-            print(f"[Reason] approval rule fail-case -> {r2['status']} ({r2['result']})")
+            print(f"[Evaluation] approval rule pass-case -> {r1['status']} ({r1['result']})")
+            print(f"[Evaluation] approval rule fail-case -> {r2['status']} ({r2['result']})")
 
             conf = eng.store.detect_conflicts()
             supersessions = eng.store.detect_supersessions()
-            print(f"[Verify] conflict edges detected: {[c['id'] for c in conf]}")
-            print(f"[Verify] supersession edges detected: {[e['id'] for e in supersessions]}")
+            print(f"[Verification] conflict edges detected: {[c['id'] for c in conf]}")
+            print(f"[Verification] supersession edges detected: {[e['id'] for e in supersessions]}")
             for c in conf + supersessions:
                 print(f"           {c['from']} --{c['relation']}-> {c['to']} | {c.get('resolution_rule') or c.get('reason')}")
             if r1["status"] != "passed" or r2["status"] != "failed":
