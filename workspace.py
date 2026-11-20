@@ -15,10 +15,27 @@ import uuid
 from typing import Any, Iterator
 from urllib.parse import quote, urlsplit
 
+from pre_output_audit import validate_audit_record
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WORKSPACE_DB_PATH = os.path.join(BASE_DIR, "workspace.db")
 CORRECTION_CATEGORIES = tuple("ABCDEF")
 SOURCE_LIMIT_BYTES = 2 * 1024 * 1024
+CLAIM_CLASSES = ("evidence", "inference", "hypothesis", "opinion")
+CLAIM_SUPPORT_STATUSES = (
+    "supported",
+    "partly_supported",
+    "unsupported",
+    "conflicting_evidence",
+    "unverified",
+    "not_applicable",
+)
+OUTPUT_REVIEW_GATES = {
+    "safety": "Safety",
+    "privacy": "Privacy",
+    "fairness": "Fairness",
+    "technical_accuracy": "Technical accuracy",
+}
 
 MODULES: dict[str, tuple[str, ...]] = {
     "projects": (),
@@ -349,6 +366,35 @@ class WorkspaceStore:
                     content TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'pending',
                     error TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, retrieved_at TEXT
                 );
+                CREATE TABLE IF NOT EXISTS claims (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    text TEXT NOT NULL,
+                    epistemic_class TEXT NOT NULL CHECK(epistemic_class IN ('evidence','inference','hypothesis','opinion')),
+                    support_status TEXT NOT NULL CHECK(support_status IN (
+                        'supported','partly_supported','unsupported','conflicting_evidence','unverified','not_applicable'
+                    )),
+                    support_summary TEXT NOT NULL DEFAULT '',
+                    uncertainty TEXT NOT NULL DEFAULT '',
+                    verification_criterion TEXT NOT NULL DEFAULT '',
+                    attribution TEXT NOT NULL DEFAULT '',
+                    sources_reviewed INTEGER NOT NULL DEFAULT 0 CHECK(sources_reviewed IN (0,1)),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS claim_sources (
+                    claim_id TEXT NOT NULL REFERENCES claims(id) ON DELETE CASCADE,
+                    source_id TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+                    PRIMARY KEY (claim_id, source_id)
+                );
+                CREATE TABLE IF NOT EXISTS output_audits (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                    status TEXT NOT NULL CHECK(status IN ('release','revise','block')),
+                    record TEXT NOT NULL,
+                    findings TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS corrections (
                     id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
                     category TEXT NOT NULL CHECK(category IN ('A','B','C','D','E','F')),
@@ -394,6 +440,8 @@ class WorkspaceStore:
                 );
                 CREATE INDEX IF NOT EXISTS idx_notes_project ON notes(project_id, created_at);
                 CREATE INDEX IF NOT EXISTS idx_sources_project ON sources(project_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_claims_project ON claims(project_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_output_audits_project ON output_audits(project_id, created_at);
                 CREATE INDEX IF NOT EXISTS idx_corrections_project ON corrections(project_id, category);
                 CREATE INDEX IF NOT EXISTS idx_tasks_run ON tasks(run_id, position);
                 CREATE INDEX IF NOT EXISTS idx_events_created ON audit_events(created_at);
@@ -531,6 +579,212 @@ class WorkspaceStore:
                 "SELECT id,url,title,content_type,status,content FROM sources "
                 "WHERE project_id=? ORDER BY created_at", (project_id,)
             )]
+
+    def create_claim(
+        self,
+        project_id: str,
+        text: str,
+        epistemic_class: str,
+        support_status: str,
+        source_ids: list[str] | tuple[str, ...] = (),
+        support_summary: str = "",
+        uncertainty: str = "",
+        verification_criterion: str = "",
+        attribution: str = "",
+        sources_reviewed: bool = False,
+    ) -> str:
+        text = text.strip()
+        epistemic_class = epistemic_class.strip().lower()
+        support_status = support_status.strip().lower()
+        support_summary = support_summary.strip()
+        uncertainty = uncertainty.strip()
+        verification_criterion = verification_criterion.strip()
+        attribution = attribution.strip()
+        if not text:
+            raise WorkspaceError("Claim text is required.")
+        if epistemic_class not in CLAIM_CLASSES:
+            raise WorkspaceError("Choose evidence, inference, hypothesis, or opinion.")
+        if support_status not in CLAIM_SUPPORT_STATUSES:
+            raise WorkspaceError("Choose a valid claim support status.")
+        normalized_source_ids = list(dict.fromkeys(
+            source_id.strip() for source_id in source_ids if isinstance(source_id, str) and source_id.strip()
+        ))
+        claim_id, now = new_id("clm"), utc_now()
+        with self._connection() as db:
+            self._require_project(db, project_id)
+            if normalized_source_ids:
+                placeholders = ",".join("?" for _ in normalized_source_ids)
+                rows = db.execute(
+                    f"SELECT id FROM sources WHERE project_id=? AND id IN ({placeholders})",
+                    (project_id, *normalized_source_ids),
+                ).fetchall()
+                found_ids = {row["id"] for row in rows}
+                missing = [source_id for source_id in normalized_source_ids if source_id not in found_ids]
+                if missing:
+                    raise WorkspaceError("Every linked source must belong to this project.")
+            db.execute(
+                "INSERT INTO claims (id,project_id,text,epistemic_class,support_status,"
+                "support_summary,uncertainty,verification_criterion,attribution,sources_reviewed,created_at,updated_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                (claim_id, project_id, text, epistemic_class, support_status, support_summary,
+                 uncertainty, verification_criterion, attribution, int(bool(sources_reviewed)), now, now),
+            )
+            db.executemany(
+                "INSERT INTO claim_sources (claim_id,source_id) VALUES (?,?)",
+                [(claim_id, source_id) for source_id in normalized_source_ids],
+            )
+            db.execute("UPDATE projects SET updated_at=? WHERE id=?", (now, project_id))
+            self._record_event(
+                db, "created", "claim", claim_id,
+                {"project_id": project_id, "epistemic_class": epistemic_class,
+                 "source_count": len(normalized_source_ids)},
+            )
+        return claim_id
+
+    def list_claims(self, project_id: str) -> list[dict[str, Any]]:
+        with self._connection() as db:
+            self._require_project(db, project_id)
+            claims = [dict(row) for row in db.execute(
+                "SELECT * FROM claims WHERE project_id=? ORDER BY created_at DESC,id",
+                (project_id,),
+            )]
+            for claim in claims:
+                claim["sources"] = [dict(row) for row in db.execute(
+                    "SELECT s.id,s.title,s.url,s.status FROM claim_sources cs "
+                    "JOIN sources s ON s.id=cs.source_id WHERE cs.claim_id=? ORDER BY s.title,s.url",
+                    (claim["id"],),
+                )]
+                claim["sources_reviewed"] = bool(claim["sources_reviewed"])
+            return claims
+
+    @staticmethod
+    def _pre_output_findings(
+        claims: list[dict[str, Any]], gates: dict[str, Any]
+    ) -> list[dict[str, str]]:
+        findings: list[dict[str, str]] = []
+
+        def add(severity: str, code: str, message: str, claim: dict[str, Any] | None = None) -> None:
+            finding = {"severity": severity, "code": code, "message": message}
+            if claim is not None:
+                finding["claim_id"] = claim["id"]
+                finding["claim_text"] = claim["text"]
+            findings.append(finding)
+
+        if not claims:
+            add("blocker", "no_claims", "No claims are recorded for this project.")
+        for gate_name, gate_label in OUTPUT_REVIEW_GATES.items():
+            gate = gates.get(gate_name, {})
+            if gate.get("status") == "fail":
+                issues = "; ".join(gate.get("issues", []))
+                message = f"{gate_label} gate failed."
+                if issues:
+                    message += f" Issues: {issues}"
+                add("blocker", f"{gate_name}_gate_failed", message)
+
+        for claim in claims:
+            linked_sources = claim.get("sources", [])
+            claim_class = claim.get("epistemic_class")
+            support_status = claim.get("support_status")
+            if claim_class == "evidence" and not linked_sources:
+                add("blocker", "evidence_without_source", "Evidence claims must link to at least one source.", claim)
+            if support_status in {"supported", "partly_supported"} and not linked_sources:
+                add("blocker", "support_without_source", "A supported claim must link to its supporting source material.", claim)
+            if support_status in {"unsupported", "conflicting_evidence", "unverified"}:
+                add("blocker", "claim_support_unresolved", f"Claim support status is {support_status.replace('_', ' ')}.", claim)
+            elif support_status == "partly_supported":
+                add("review", "partial_support", "Claim is only partly supported; preserve its limits in any output.", claim)
+            if support_status == "supported" and not claim.get("support_summary", "").strip():
+                add("blocker", "support_summary_missing", "A supported claim needs a summary of what the linked material supports.", claim)
+            if linked_sources and not claim.get("sources_reviewed"):
+                add("blocker", "source_review_missing", "A reviewer has not attested to checking the linked sources against this claim.", claim)
+            for source in linked_sources:
+                if source.get("status") != "retrieved":
+                    add("blocker", "source_not_retrieved", f"Linked source is {source.get('status', 'unavailable')}; retrieve and review it before relying on the claim.", claim)
+            if claim_class in {"inference", "hypothesis", "opinion"} and not claim.get("uncertainty", "").strip():
+                add("blocker", "uncertainty_missing", f"{claim_class.title()} claims need an uncertainty or limitation statement.", claim)
+            if claim_class == "inference" and not claim.get("support_summary", "").strip():
+                add("blocker", "reasoning_basis_missing", "An inference needs a recorded reasoning basis tied to its evidence.", claim)
+            if claim_class == "hypothesis" and not claim.get("verification_criterion", "").strip():
+                add("blocker", "hypothesis_test_missing", "A hypothesis needs a criterion that could confirm or falsify it.", claim)
+            if claim_class == "opinion" and not claim.get("attribution", "").strip():
+                add("blocker", "opinion_attribution_missing", "An opinion or recommendation needs an identified author or decision owner.", claim)
+
+        return findings
+
+    def create_pre_output_audit(
+        self, project_id: str, record: dict[str, Any]
+    ) -> dict[str, Any]:
+        if not isinstance(record, dict):
+            raise WorkspaceError("Audit record must be an object.")
+        record = dict(record)
+        audit_id, now = new_id("aud"), utc_now()
+        record["audit_id"] = audit_id
+        record["timestamp_utc"] = now
+        errors = validate_audit_record(record)
+        gates = record.get("gates", {})
+        if isinstance(gates, dict):
+            for gate_name, gate in gates.items():
+                if isinstance(gate, dict) and gate.get("status") == "pass":
+                    if not gate.get("checks"):
+                        errors.append(f"gates.{gate_name} with pass status must include at least one check.")
+                    if not gate.get("evidence"):
+                        errors.append(f"gates.{gate_name} with pass status must include supporting evidence.")
+        if errors:
+            raise WorkspaceError("Invalid pre-output audit record:\n" + "\n".join(errors))
+
+        claims = self.list_claims(project_id)
+        findings = self._pre_output_findings(claims, gates)
+        blockers = [item for item in findings if item["severity"] == "blocker"]
+        if record["disposition"] == "release" and blockers:
+            with self._connection() as db:
+                self._require_project(db, project_id)
+                self._record_event(
+                    db, "blocked_release", "pre_output_audit", audit_id,
+                    {"project_id": project_id,
+                     "finding_codes": sorted({item["code"] for item in blockers})},
+                    actor=record["actor"],
+                )
+            raise WorkspaceError(
+                "Release is blocked by claim-ledger findings. Choose revise or block, "
+                "or resolve the findings before recording a release."
+            )
+        record["notes"] = list(record["notes"])
+        for finding in findings:
+            if finding["severity"] == "review" and finding["message"] not in record["notes"]:
+                record["notes"].append(finding["message"])
+        with self._connection() as db:
+            self._require_project(db, project_id)
+            db.execute(
+                "INSERT INTO output_audits (id,project_id,status,record,findings,created_at) "
+                "VALUES (?,?,?,?,?,?)",
+                (audit_id, project_id, record["disposition"],
+                 json.dumps(record, ensure_ascii=False),
+                 json.dumps(findings, ensure_ascii=False), now),
+            )
+            self._record_event(
+                db, record["disposition"], "pre_output_audit", audit_id,
+                {"project_id": project_id, "status": record["disposition"],
+                 "finding_count": len(findings)},
+                actor=record["actor"],
+            )
+        return {
+            "id": audit_id, "project_id": project_id, "status": record["disposition"],
+            "record": record, "findings": findings, "created_at": now,
+        }
+
+    def list_pre_output_audits(self, project_id: str) -> list[dict[str, Any]]:
+        with self._connection() as db:
+            self._require_project(db, project_id)
+            audits = []
+            for row in db.execute(
+                "SELECT * FROM output_audits WHERE project_id=? ORDER BY created_at DESC,id DESC",
+                (project_id,),
+            ):
+                audit = dict(row)
+                audit["record"] = json.loads(audit["record"])
+                audit["findings"] = json.loads(audit["findings"])
+                audits.append(audit)
+            return audits
 
     def create_correction(
         self, project_id: str, category: str, title: str, body: str

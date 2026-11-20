@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Claims · {{ project.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('project_detail', project_id=project.id) }}">← {{ project.name }}</a></p>
+<h1>Claims and evidence ledger</h1>
+<p>Record each statement separately and label it as evidence, inference, hypothesis, or opinion. Labels and source-review attestations are user supplied; this page does not determine whether a claim is true.</p>
+
+<section class="panel">
+  <h2>Record a claim</h2>
+  <form class="search-form" method="post" action="{{ url_for('project_claims', project_id=project.id) }}">
+    <label class="wide"><span>Claim text</span><textarea name="text" rows="3" required maxlength="10000"></textarea></label>
+    <label><span>Information type</span>
+      <select name="epistemic_class" required>
+        <option value="">Choose a type</option>
+        {% for claim_class in claim_classes %}<option value="{{ claim_class }}">{{ claim_class|title }}</option>{% endfor %}
+      </select>
+    </label>
+    <label><span>Support status</span>
+      <select name="support_status" required>
+        <option value="">Choose a status</option>
+        {% for status in support_statuses %}<option value="{{ status }}">{{ status|replace('_', ' ')|title }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="wide"><span>Support summary</span><textarea name="support_summary" rows="2" maxlength="5000" placeholder="What does the linked material support?"></textarea></label>
+    <label class="wide"><span>Uncertainty or limitations</span><textarea name="uncertainty" rows="2" maxlength="3000" placeholder="Required by the pre-output review for inference, hypothesis, and opinion claims."></textarea></label>
+    <label class="wide"><span>How could this claim be checked?</span><textarea name="verification_criterion" rows="2" maxlength="3000"></textarea></label>
+    <label class="wide"><span>Attribution for opinion or recommendation</span><input name="attribution" maxlength="500" placeholder="Person or role holding the judgment"></label>
+    {% if sources %}
+    <fieldset class="wide source-picker">
+      <legend>Link project sources</legend>
+      {% for source in sources %}
+      <label class="check-option">
+        <input type="checkbox" name="source_ids" value="{{ source.id }}">
+        <span>{{ source.title or source.url }} <small>({{ source.status }})</small></span>
+      </label>
+      {% endfor %}
+      <label class="check-option"><input type="checkbox" name="sources_reviewed" value="yes"><span>I reviewed the linked source material against this claim.</span></label>
+    </fieldset>
+    {% else %}
+    <p class="wide muted">No project sources are available yet. Add sources to the project before recording source-supported claims.</p>
+    {% endif %}
+    <button type="submit">Save claim</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Recorded claims ({{ claims|length }})</h2>
+  {% for claim in claims %}
+  <article class="record claim-record">
+    <div class="claim-heading"><span class="category-tag">{{ claim.epistemic_class|title }}</span><span class="support-tag">{{ claim.support_status|replace('_', ' ')|title }}</span></div>
+    <p class="preserve-lines">{{ claim.text }}</p>
+    {% if claim.support_summary %}<p><strong>Support summary:</strong> {{ claim.support_summary }}</p>{% endif %}
+    {% if claim.uncertainty %}<p><strong>Uncertainty and limitations:</strong> {{ claim.uncertainty }}</p>{% endif %}
+    {% if claim.verification_criterion %}<p><strong>Verification criterion:</strong> {{ claim.verification_criterion }}</p>{% endif %}
+    {% if claim.attribution %}<p><strong>Attributed to:</strong> {{ claim.attribution }}</p>{% endif %}
+    {% if claim.sources %}
+    <p><strong>Sources:</strong></p>
+    <ul>{% for source in claim.sources %}<li>{{ source.title or source.url }} · {{ source.status }} · <a href="{{ url_for('project_source_detail', project_id=project.id, source_id=source.id) }}">inspect source</a></li>{% endfor %}</ul>
+    <small>Source review attested: {{ 'yes' if claim.sources_reviewed else 'no' }}</small>
+    {% else %}<p class="status-failed">No sources linked.</p>{% endif %}
+    <small class="muted">Updated {{ claim.updated_at }}</small>
+  </article>
+  {% else %}<p>No claims have been recorded for this project.</p>{% endfor %}
+</section>
+
+<p><a class="button-link" href="{{ url_for('project_pre_output_audit', project_id=project.id) }}">Run pre-output review</a></p>
+{% endblock %}

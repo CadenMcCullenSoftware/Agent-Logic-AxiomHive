@@ -33,7 +33,10 @@ from catalog_engine import (
 )
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from workspace import (
+    CLAIM_CLASSES,
+    CLAIM_SUPPORT_STATUSES,
     CORRECTION_CATEGORIES,
+    OUTPUT_REVIEW_GATES,
     WORKSPACE_DB_PATH,
     WorkspaceError,
     WorkspaceStore,
@@ -97,6 +100,10 @@ def workflow_draft() -> str:
              "depends_on": ["organize-corrections"]},
         ],
     }, indent=2)
+
+
+def _form_lines(value: str) -> list[str]:
+    return [line.strip() for line in value.splitlines() if line.strip()]
 
 
 def _project_or_404(store: WorkspaceStore, project_id: str) -> dict[str, Any] | None:
@@ -215,6 +222,80 @@ def project_source_detail(project_id: str, source_id: str):
     if project is None or source is None:
         return render_template("error.html", message="Source not found for this project."), 404
     return render_template("source_detail.html", project=project, source=source)
+
+
+@app.route("/projects/<project_id>/claims", methods=["GET", "POST"])
+def project_claims(project_id: str):
+    store = new_workspace()
+    project = _project_or_404(store, project_id)
+    if project is None:
+        return render_template("error.html", message="Project not found."), 404
+    if request.method == "POST":
+        try:
+            store.create_claim(
+                project_id,
+                request.form.get("text", ""),
+                request.form.get("epistemic_class", ""),
+                request.form.get("support_status", ""),
+                request.form.getlist("source_ids"),
+                request.form.get("support_summary", ""),
+                request.form.get("uncertainty", ""),
+                request.form.get("verification_criterion", ""),
+                request.form.get("attribution", ""),
+                request.form.get("sources_reviewed") == "yes",
+            )
+            flash("Claim recorded.", "success")
+        except WorkspaceError as exc:
+            flash(str(exc), "error")
+        return redirect(url_for("project_claims", project_id=project_id))
+    return render_template(
+        "claims.html", project=project, claims=store.list_claims(project_id),
+        sources=store.list_sources(project_id), claim_classes=CLAIM_CLASSES,
+        support_statuses=CLAIM_SUPPORT_STATUSES,
+    )
+
+
+@app.route("/projects/<project_id>/audit", methods=["GET", "POST"])
+def project_pre_output_audit(project_id: str):
+    store = new_workspace()
+    project = _project_or_404(store, project_id)
+    if project is None:
+        return render_template("error.html", message="Project not found."), 404
+    if request.method == "POST":
+        gates = {}
+        for gate_name in OUTPUT_REVIEW_GATES:
+            gates[gate_name] = {
+                "status": request.form.get(f"{gate_name}_status", ""),
+                "checks": _form_lines(request.form.get(f"{gate_name}_checks", "")),
+                "evidence": _form_lines(request.form.get(f"{gate_name}_evidence", "")),
+                "issues": _form_lines(request.form.get(f"{gate_name}_issues", "")),
+            }
+        record = {
+            "actor": request.form.get("actor", "").strip(),
+            "commander_or_requestor": request.form.get("commander_or_requestor", "").strip(),
+            "output_type": request.form.get("output_type", "").strip(),
+            "output_scope": request.form.get("output_scope", "").strip(),
+            "information_hierarchy_applied": request.form.get("information_hierarchy_applied") == "yes",
+            "unsourced_statements_separated": request.form.get("unsourced_statements_separated") == "yes",
+            "gates": gates,
+            "disposition": request.form.get("disposition", ""),
+            "notes": _form_lines(request.form.get("notes", "")),
+        }
+        try:
+            audit = store.create_pre_output_audit(project_id, record)
+            flash(f"Pre-output audit recorded with disposition: {audit['status']}.", "success")
+        except WorkspaceError as exc:
+            return render_template(
+                "audit.html", project=project, claims=store.list_claims(project_id),
+                checks=OUTPUT_REVIEW_GATES, audits=store.list_pre_output_audits(project_id),
+                form_data=request.form, errors=str(exc).splitlines(),
+            ), 400
+        return redirect(url_for("project_pre_output_audit", project_id=project_id))
+    audits = store.list_pre_output_audits(project_id)
+    return render_template(
+        "audit.html", project=project, claims=store.list_claims(project_id),
+        checks=OUTPUT_REVIEW_GATES, audits=audits, form_data={}, errors=[],
+    )
 
 
 @app.get("/projects/<project_id>/corrections")

@@ -18,6 +18,8 @@
 <div class="feature-links">
   <a href="#notes">Project notes ({{ notes|length }})</a>
   <a href="#sources">Sources ({{ sources|length }})</a>
+  <a href="{{ url_for('project_claims', project_id=project.id) }}">Claims and evidence ledger</a>
+  <a href="{{ url_for('project_pre_output_audit', project_id=project.id) }}">Pre-output review</a>
   <a href="{{ url_for('project_corrections', project_id=project.id) }}">Corrections ({{ corrections|length }})</a>
   <a href="{{ url_for('project_workflows', project_id=project.id) }}">Workflows ({{ workflows|length }})</a>
 </div>

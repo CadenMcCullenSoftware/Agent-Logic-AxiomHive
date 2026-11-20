@@ -67,6 +67,8 @@ Open `http://127.0.0.1:5000/workspace` to create and organize projects. The exis
 The workspace stores application records in `workspace.db`, separate from the semantic catalog database. It includes:
 
 - projects with objectives, linked notes, and collected source records
+- a claim ledger labeled evidence, inference, hypothesis, or opinion, with source links, support status, uncertainty, and verification criteria
+- pre-output review records with metadata checks and human attestations for safety, privacy, fairness, and technical accuracy
 - user-triggered HTTPS retrieval restricted to public IP addresses, with redirects disabled and a 2 MiB text limit
 - correction records organized by category A–F
 - JSON workflow definitions checked for schema shape, registered modules, dependencies, task configuration, ordering, and agent assignments
@@ -74,6 +76,8 @@ The workspace stores application records in `workspace.db`, separate from the se
 - registered task operations for source review, note creation, correction organization, and a human-review pause
 - agent role definitions, coordination messages, task assignment references, and audit events
 - a command-line interface for project listing, workflow validation, and explicitly confirmed local workflow execution
+
+The pre-output review is a deterministic metadata check plus recorded human attestations. It does not assess the meaning or truth of claims, certify source quality, or replace human sign-off. A source marked retrieved has only been fetched; a reviewer must still inspect it and attest that it supports the linked claim.
 
 Workflow execution invokes only the registered local task types; workflow JSON cannot run shell commands. The six correction categories are stored as A–F because this specification does not define category names. The intended integrated sequence remains a design target; the app does not claim a demonstrated end-to-end research workflow.
 
@@ -108,9 +112,21 @@ The design set is organized around the following concerns:
 - Independent verification for high-risk claims
 - Evaluation and testing of agent behavior
 
+## Governance and operations documents
+
+- [docs/SYSTEM_PURPOSE.md](./docs/SYSTEM_PURPOSE.md) — commander-led system purpose, authority boundaries, and factual constraint reporting posture
+- [docs/INFORMATION_HIERARCHY.md](./docs/INFORMATION_HIERARCHY.md) — evidence/inference/hypothesis/opinion definitions, labeling rules, and output template
+- [docs/PRE_OUTPUT_AUDIT.md](./docs/PRE_OUTPUT_AUDIT.md) — pre-output audit process for safety, privacy, fairness, and technical accuracy
+- [docs/pre_output_audit_checklist.template.json](./docs/pre_output_audit_checklist.template.json) — machine-readable pre-output audit checklist template
+- [pre_output_audit.py](./pre_output_audit.py) — reference validator/summarizer for pre-output audit checklist records
+- [docs/THREAT_MODEL_RED_TEAM_AUDIT_LOGGING.md](./docs/THREAT_MODEL_RED_TEAM_AUDIT_LOGGING.md) — threat modeling plan, red-team testing schedule, and audit logging requirements
+- [docs/UNSOURCED_STATEMENT_VERIFICATION_POLICY.md](./docs/UNSOURCED_STATEMENT_VERIFICATION_POLICY.md) — policy/mechanism separating unsourced statements from verified facts
+- [docs/VALUE_PROPOSITION_COMPLIANCE_PRIVACY.md](./docs/VALUE_PROPOSITION_COMPLIANCE_PRIVACY.md) — value proposition and compliance/privacy framework
+- [docs/EVIDENCE_SOURCING_STANDARDS.md](./docs/EVIDENCE_SOURCING_STANDARDS.md) — evidence-sourcing standards for factual, publicly testable designs (including multi-agent swarm claims)
+
 ## Testing and validation status
 
-The repository includes an executable catalog reasoning engine, a browser-based catalog and project workspace, and automated tests for the catalog engine and Flask catalog routes. Baseline automated suites currently pass in this environment (`33 passed` across `test_catalog_engine.py` and `test_app.py`).
+The repository includes an executable catalog reasoning engine, a browser-based catalog and project workspace, automated tests, and reference governance/audit artifacts. In this environment, `python3 -m pytest -q` passes (`50 passed, 14 subtests passed`).
 
 What is present:
 
@@ -118,8 +134,12 @@ What is present:
 - `app.py` — Flask web UI exposing catalog reasoning tools and the project-operations workspace
 - `workspace.py` — SQLite-backed project, source, correction, workflow, task, and agent-coordination modules
 - `platform_cli.py` — command-line workspace operations
+- `pre_output_audit.py` — pre-output audit checklist validator/summarizer
 - `test_catalog_engine.py` — unit tests for the catalog engine (14 tests)
 - `test_app.py` — UI tests for existing Flask catalog routes (19 tests)
+- `test_workspace.py` — unit tests for workspace URL/workflow validation and core store/review lifecycle (10 tests)
+- `test_pre_output_audit.py` — unit tests for pre-output audit validation/CLI (7 tests)
+- `docs/` — governance, audit, threat/red-team, verification, compliance/privacy, and evidence-sourcing documents
 - `requirements.txt` — package manifest (jsonschema, flask)
 - `catalog.db` — SQLite persistence store
 - `.github/workflows/ci.yml` — CI pipeline (test, validate, selftest, compile)
@@ -128,18 +148,27 @@ Automated validation includes:
 
 - Unit tests for catalog validation, JsonLogic evaluation, and reasoning engine behavior
 - Flask route tests for catalog browsing, traversal, evaluation, validation, and related API endpoints
+- Workspace unit tests for URL validation, workflow validation, core record handling, manual-review pause/resume, and audit events
+- Pre-output audit checklist validation tests and template validation
 - Catalog schema validation against the meta-model
 - Engine self-test exercising all four reasoning tools
 - Python compilation checks
 
 Current gaps:
 
-- Automated feature tests for workspace/project, retrieval, correction, workflow, human-review, and agent-coordination routes and CLI flows are limited or absent
+- Automated feature/security tests for workspace/project, retrieval, correction, workflow, human-review, and agent-coordination UI/CLI flows remain limited beyond current unit coverage
 - No production deployment artifacts, authentication, access control, or hosted multi-user isolation
 - Correction categories are stored as A–F because category names/definitions are not specified by the current schema
+- Pre-output audit, threat modeling, and red-team materials are documented/reference mechanisms; full runtime enforcement and independent adversarial validation require further implementation and review
 
 Run the validation suite:
 
+```
+python3 -m pytest -q
+python3 pre_output_audit.py validate docs/pre_output_audit_checklist.template.json
+python3 catalog_engine.py --tool validate
+python3 catalog_engine.py --tool selftest --database :memory:
+python3 -m py_compile catalog_engine.py workspace.py platform_cli.py app.py pre_output_audit.py test_catalog_engine.py test_app.py test_workspace.py test_pre_output_audit.py
 ```
 python3 -m pytest -q
 python3 catalog_engine.py --tool validate

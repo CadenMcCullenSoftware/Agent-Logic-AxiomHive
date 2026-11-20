@@ -1,6 +1,6 @@
 # Contributing to Agent Docs
 
-Thank you for contributing. This repository is a policy-and-specification package for an evidence-grounded, user-controlled AI research assistant. It is documentation-centric and intentionally minimal: there is no production application code or deployable service here.
+Thank you for contributing. This repository combines design guidance with a local Flask and SQLite reference workspace for evidence-grounded, user-controlled research operations. It is not a production deployment package or hosted multi-user service.
 
 ## How to contribute
 
@@ -18,16 +18,19 @@ Thank you for contributing. This repository is a policy-and-specification packag
 - `test_catalog_engine.py` — unit tests for `catalog_engine.py`
 - `app.py` — Flask web UI exposing the catalog engine reasoning tools
 - `test_app.py` — UI tests for the Flask application
+- `workspace.py` — SQLite-backed projects, sources, claims, pre-output review records, workflows, and coordination
+- `templates/` — Flask workspace and catalog pages
+- `test_workspace.py` — workspace behavior tests
 
 ## Running checks
 
 The Python catalog engine has tests and a self-test CLI, and the Flask application has UI tests:
 
 ```
-python3 -m pytest test_catalog_engine.py test_app.py -v
+python3 -m pytest -v
 python3 catalog_engine.py --tool validate
 python3 catalog_engine.py --tool selftest --database :memory:
-python3 -m py_compile catalog_engine.py test_catalog_engine.py app.py test_app.py
+python3 -m py_compile catalog_engine.py workspace.py platform_cli.py app.py
 ```
 
 Install the dependencies:
@@ -40,8 +43,8 @@ pip install -r requirements.txt
 
 - Keep changes scoped to a single concern.
 - Update documentation when behavior or the schema changes.
-- Add or update tests for any change to `catalog_engine.py`.
-- Ensure `python3 -m pytest test_catalog_engine.py test_app.py -v` passes.
+- Add or update tests for behavior changes.
+- Ensure `python3 -m pytest -v` passes.
 - Do not commit secrets, keys, or credentials.
 
 ## Questions

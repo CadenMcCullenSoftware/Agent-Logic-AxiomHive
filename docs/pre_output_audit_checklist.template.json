@@ -1,0 +1,64 @@
+{
+  "audit_id": "audit_YYYYMMDDTHHMMSSZ_example",
+  "timestamp_utc": "2026-11-20T00:00:00Z",
+  "actor": "name-or-system-id",
+  "commander_or_requestor": "commander-or-requestor-id",
+  "output_type": "text|code|workflow|report|other",
+  "output_scope": "Describe the requested output and boundaries",
+  "information_hierarchy_applied": true,
+  "unsourced_statements_separated": true,
+  "gates": {
+    "safety": {
+      "status": "pass",
+      "checks": [
+        "No unauthorized harmful instructions",
+        "State-changing/external actions identified and approved as required",
+        "Risks, reversibility, and safe alternatives documented"
+      ],
+      "evidence": [
+        "Reference to approval, scope, or risk review"
+      ],
+      "issues": []
+    },
+    "privacy": {
+      "status": "pass",
+      "checks": [
+        "Data minimization applied",
+        "No secrets/PII unnecessarily exposed",
+        "Disclosure/storage boundaries respected"
+      ],
+      "evidence": [
+        "Reference to redaction/review or n/a justification"
+      ],
+      "issues": []
+    },
+    "fairness": {
+      "status": "pass",
+      "checks": [
+        "No unrequested discriminatory or exclusionary assumptions",
+        "Relevant impacts/limitations considered",
+        "Criteria applied consistently"
+      ],
+      "evidence": [
+        "Reference to criteria/limitations review"
+      ],
+      "issues": []
+    },
+    "technical_accuracy": {
+      "status": "pass",
+      "checks": [
+        "Claims labeled and supported or marked unverified",
+        "Sources/artifacts/tests verified or qualified",
+        "No fabricated citations, results, or capabilities"
+      ],
+      "evidence": [
+        "Reference to sources, tests, compile/check outputs"
+      ],
+      "issues": []
+    }
+  },
+  "disposition": "release",
+  "notes": [
+    "Release only when all applicable gates pass; use revise/block otherwise."
+  ]
+}
