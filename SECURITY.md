@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-This repository is a design-and-specification package rather than a deployable application, so there are no versioned releases with security support.
+This repository is primarily a design-and-specification package with local reference implementations, not a production deployment package. There are no versioned releases with security support.
 
 | Version | Supported |
 | ------- | --------- |
@@ -10,14 +10,16 @@ This repository is a design-and-specification package rather than a deployable a
 
 ## Reporting a Vulnerability
 
-If you discover a security concern in the design documents, schema, or the `catalog_engine.py` reference implementation, please open an issue describing the issue and its impact. Do not disclose potential vulnerabilities publicly before they have been addressed.
+If you discover a security concern in the design documents, schema, or reference implementation modules, please open a private security advisory if available; otherwise open an issue describing the impact without including exploit details, secrets, credentials, or personally identifiable information. Do not disclose potential vulnerabilities publicly before they have been assessed.
 
 Please do not submit secrets, keys, credentials, or personally identifiable information through issues or pull requests.
 
 ## Scope
 
-- In scope: `catalog_engine.py`, `agent-design.schema.json`, design documents (`*.md`).
-- Out of scope: third-party dependencies listed in `requirements.txt` (e.g. `jsonschema`).
+- **In scope (design/specification):** `agent-design.schema.json`, design and policy documents (`*.md`).
+- **In scope (reference implementation):** `catalog_engine.py`, `app.py`, `workspace.py`, `platform_cli.py`, and repository test scripts. These modules include network retrieval, SQLite persistence, workflow validation/execution, and web/CLI interfaces and should be reviewed for security issues.
+- **Out of scope:** third-party dependencies listed in `requirements.txt` (e.g. `jsonschema`, `flask`) except for repository-specific misuse or insecure integration.
+- **Deployment boundary:** the local workspace is a reference implementation without production authentication, authorization, or multi-user isolation guarantees. Independent security, privacy, and deployment review is required before exposing it beyond a trusted local environment.
 
 ## Safe references
 

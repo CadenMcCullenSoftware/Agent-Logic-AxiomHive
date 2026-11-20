@@ -203,6 +203,14 @@ def validate_https_source_url(url: str) -> tuple[str, str, int, str]:
         host_ascii = hostname.encode("idna").decode("ascii").lower()
     except UnicodeError as exc:
         raise WorkspaceError("The source hostname is invalid.") from exc
+    if host_ascii == "localhost" or host_ascii.endswith(".localhost"):
+        raise WorkspaceError("Source retrieval is restricted to public network addresses.")
+    try:
+        ip = ipaddress.ip_address(host_ascii.strip("[]"))
+    except ValueError:
+        ip = None
+    if ip is not None and not ip.is_global:
+        raise WorkspaceError("Source retrieval is restricted to public network addresses.")
     return host_ascii, parsed.path or "/", port, parsed.query
 
 

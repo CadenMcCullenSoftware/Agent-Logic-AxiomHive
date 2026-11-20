@@ -36,7 +36,8 @@ The materials in this repo emphasize:
 
 These documents expand on the design philosophy and cover important failure modes and safeguards:
 
-- [Preserving user control.md](./Preserving%20user%20control.md)
+- [1. Preserving user control.md](./1.%20Preserving%20user%20control.md) — master synthesis covering Principles 1–10 (filename retained for provenance; content is cross-principle)
+- [Preserving user control.md](./Preserving%20user%20control.md) — standalone Principle 1 brief
 - [Evidence-supported conclusions.md](./Evidence-supported%20conclusions.md)
 - [Principle 2: Explicit approval before automated action.md](./Principle%202:%20Explicit%20approval%20before%20automated%20action.md)
 - [Principle 3: Verifying that sources and scripts exist.md](./Principle%203:%20Verifying%20that%20sources%20and%20scripts%20exist.md)
@@ -46,7 +47,7 @@ These documents expand on the design philosophy and cover important failure mode
 - [Avoiding unrequested interpretation.md](./Avoiding%20unrequested%20interpretation.md)
 - [Attribution and credit in AI-assisted work.md](./Attribution%20and%20credit%20in%20AI-assisted%20work.md)
 - [Collective learning without damage.md](./Collective%20learning%20without%20damage.md)
-- [SKILL.md](./SKILL.md)
+- [SKILL.md](./SKILL.md) — deterministic multi-agent orchestration contract (`workflow-composer`), separate from the local Flask/SQLite workspace runtime
 
 ### Additional reference material
 
@@ -109,16 +110,16 @@ The design set is organized around the following concerns:
 
 ## Testing and validation status
 
-The repository includes an executable catalog reasoning engine, a browser-based catalog and project workspace, and automated tests for the catalog engine and existing Flask catalog routes.
+The repository includes an executable catalog reasoning engine, a browser-based catalog and project workspace, and automated tests for the catalog engine and Flask catalog routes. Baseline automated suites currently pass in this environment (`33 passed` across `test_catalog_engine.py` and `test_app.py`).
 
 What is present:
 
 - `catalog_engine.py` — executable semantic reasoning engine over the catalog knowledge graph
-- `app.py` — Flask web UI exposing all engine reasoning tools
+- `app.py` — Flask web UI exposing catalog reasoning tools and the project-operations workspace
 - `workspace.py` — SQLite-backed project, source, correction, workflow, task, and agent-coordination modules
 - `platform_cli.py` — command-line workspace operations
-- `test_catalog_engine.py` — unit tests for the catalog engine (11 tests)
-- `test_app.py` — UI tests for the existing catalog Flask routes (17 tests)
+- `test_catalog_engine.py` — unit tests for the catalog engine (14 tests)
+- `test_app.py` — UI tests for existing Flask catalog routes (19 tests)
 - `requirements.txt` — package manifest (jsonschema, flask)
 - `catalog.db` — SQLite persistence store
 - `.github/workflows/ci.yml` — CI pipeline (test, validate, selftest, compile)
@@ -126,24 +127,25 @@ What is present:
 Automated validation includes:
 
 - Unit tests for catalog validation, JsonLogic evaluation, and reasoning engine behavior
+- Flask route tests for catalog browsing, traversal, evaluation, validation, and related API endpoints
 - Catalog schema validation against the meta-model
 - Engine self-test exercising all four reasoning tools
 - Python compilation checks
 
-The project-workspace modules were syntax-compiled during this implementation. Automated feature tests for the new project, retrieval, correction, workflow, and agent routes have not been added.
+Current gaps:
 
-Run the full test suite:
+- Automated feature tests for workspace/project, retrieval, correction, workflow, human-review, and agent-coordination routes and CLI flows are limited or absent
+- No production deployment artifacts, authentication, access control, or hosted multi-user isolation
+- Correction categories are stored as A–F because category names/definitions are not specified by the current schema
+
+Run the validation suite:
 
 ```
-python3 -m pytest test_catalog_engine.py test_app.py -v
+python3 -m pytest -q
 python3 catalog_engine.py --tool validate
 python3 catalog_engine.py --tool selftest --database :memory:
-python3 -m py_compile catalog_engine.py workspace.py platform_cli.py app.py test_catalog_engine.py test_app.py
+python3 -m py_compile catalog_engine.py workspace.py platform_cli.py app.py test_catalog_engine.py test_app.py test_workspace.py
 ```
-
-What is not present:
-
-- production deployment artifacts, authentication, or hosted multi-user service
 
 ## Code and implementation status
 
